@@ -60,32 +60,164 @@ conda env create -f path/to/environment_LINUX.yml -p /home/phe.gov.uk/another.us
 
 being the value after the argument -p the the *location where conda is installed* followed by *envs/initio*.
 
-
 ## **USAGE**
 
-The script **hiv_initio_project.py** manages all the tools that the method offers. To use it type in a terminal:
+The script **hiv_initio_project.py** manages all the tools the method offers. The usage of the script is as followed: 
 
-`python3 /parth/to/hiv_initio_project.py -i [-p] [-qc] [-c] [-f] [-d] [-m30]`
+`python3 /parth/to/hiv_initio_project.py -i [-p] [-qc] [-c] [-f] [-d] [-m]`
 
-with **-i** or **--input**, which takes the path to the run containing the data to analyse, being ***REQUIRED*** for all the tools that can be selected by optional arguments:  
+with **-i** or **--input** taking the path to the run containing the data to analyse. This argument is ***REQUIRED*** for all the tools (selected by the specific optional arguments) to work. Details about the function of each tool can be found by typing:
 
-* **-p, --postgenomancer**, with run location selected (-i), decompresses the files *"_quasibams.zip"*,*"_post-run.zip"* and *"_typonomer.zip"*. It takes the files *.tabular* stored in *quasibams*, produces a file *Coverage_Depth_Summary_HIV.csv* with the coverage depth for all the sequences and runs the PHE QuasiBAM tool to generate sequences of Majority and Minority variants (frequency of 20PC and 2PC) at depth of 100 reads. It reads the files *.nex* from directory *post-run* and files *_read_counts.tsv* and *_genomes.fas* and creates a file *Summary_Genomancer_Results_HIV.csv* with information about the analysis by Genomancer. It extracts each fasta sequence from the file *_genomes.fas* into a new directory called *FASTAs*. A value "*m30*" can be used after *-p/--postgenomancer* to produce additional sequences at depth of 30 reads for Majority variants (20PC) for the same sample. WARNING: This tool needs to be run in the HPC cluster to use the PHE QuasiBAM and to get access to the files *_quasibams.zip*,*_post-run.zip* and *_typonomer.zip*, *_genomes.fas* and *_read_counts.tsv*
+`python3 hiv_initio_project.py --help`
+
+and are explained in detail in the following secction:
+
+* **-p, --postgenomancer**. This tool needs to be **run in the HPC cluster** to use the PHE QuasiBAM and to get access to the files *_quasibams.zip*,*_post-run.zip* and *_typonomer.zip*, *_genomes.fas* and *_read_counts.tsv* produced by Genomancer pipeline. It decompresses the files *"_quasibams.zip"*,*"_post-run.zip"* and *"_typonomer.zip"* into new subdirectories *quasibams*, *post-run* and *typonomer*, respectively. The files *.tabular* stored in *quasibams* are processed to generate a file *Coverage_Depth_Summary_HIV.csv*, which contains the coverage depth for all the sequences. Then QuasiBAM tool is invoked in the cluster to generate sequences of Majority and Minority variants (frequency of 20PC and 2PC) at depth of 100 reads.  The files *.nex* from directory *post-run*,  *_read_counts.tsv* and *_genomes.fas* are then used to create a file *Summary_Genomancer_Results_HIV.csv*, with a summary of the results obtained by Genomancer. Each fasta sequence is extracted from the file *_genomes.fas* into a new directory called *FASTAs*, in case the user needs it. All the files and folders labelled as "^" in the Figure 1 **must** be transferred then to the specific Run folder in the *Project - INITiO*. A value "*mad30*" can be used after *-p/--postgenomancer* to produce additional sequences at depth of 30 reads for Majority variants (20PC) for the same sample. 
                       
-* **-qc, --quality**, with run location selected (-i), it takes each *TABULAR* file from the directory *quasibams* and generates a new file *_Quasibam_FASTA_numbering.xlsx*, to be used for potential inspection of positions in the sequences. The tool takes the *FASTA files* from each sample located in the same directory and aligns them to the reference sequence [**K03455.1_HXB2.fasta**](K03455.1_HXB2.fasta), saving the resulting alignmets in a subdirectory *quasibams/tmps*. These alignments are trimmed in sub-alignments corresponding to each genomic region and evaulated for frame shifts and/or stop codons. The information is recorded in the file *FRAMESHIFT_initial_check_RUNID.txt* in *quasibams*. In a subdirectory *quasibams/data_to_clean*, a file *_aligned_to_HXB2.fas* for each sampleis created for potential sequence editing if needed, containing the query sequences aligned to the gene segments of reference.  
+* **-qc, --quality**. Each *.tabular* file from the directory *quasibams* is used to generate a new file *_Quasibam_FASTA_numbering.xlsx*, used for potential inspection of positions in the sequences. The *FASTA files* from each sample located in the same directory are aligned to the reference sequence [**K03455.1_HXB2.fasta**](K03455.1_HXB2.fasta) and the resulting alignmets saved in a recently created subdirectory *quasibams/tmps*. These alignments are trimmed in sub-alignments corresponding to each genomic region and evaulated for frame shifts and/or stop codons. The information is then recorded in the file *FRAMESHIFT_initial_check_RUNID.txt* in *quasibams* (see example in Figure 2). In a subdirectory *quasibams/data_to_clean*, a file *_aligned_to_HXB2.fas* for each sample is created for potential sequence editing if needed, containing the query sequences aligned to the gene segments of reference.  
 
-* **-c, --confirmation**,  with run location selected (-i), it takes the *FASTA* files from the subdirectory *quasibams/data_to_clean* and repeats the same evaluation for frame-shifts/stop codons, generating a file *FRAMESHIFT_post_cleaning_RUNID.txt*.
+* **-c, --confirmation**. This tools works more or less similar to the one above but in this case just takes the *FASTA* files from the subdirectory *quasibams/data_to_clean* and repeats the same evaluation for frame-shifts/stop codons, generating a file *FRAMESHIFT_post_cleaning_RUNID.txt*.
 
-* **-f, --files**, with run location selected (-i), takes the recently confirmed *FASTA* files from the subdirectory *quasibams/data_to_clean* and creates the files *_2-20PC_D100_seqs_for_Resistance_report.fasta* and *_20PC_D100_seqs_for_WG_Subtyping.fasta* in a new directory called *fastas*, used for subtyping analysis and antiviral resistance genotyping. An additional file *_20PC_D30_seqs_for_All_Analyses.fasta* may be created if majoritiy variants at depth of 30 reads have been analysed. New directories *hivdb.stanford.report* and *subtyping* are generated to store the reports of the analyses to be done. Finally a file *_2-20PC_HIV_Genome_map.fasta* is created for numbering and genomic mapping purposes, containing the query sequences aligned to all the gene segments of reference
+* **-f, --files**. It takes the recently confirmed and clean *FASTA* files from the subdirectory *quasibams/data_to_clean* and creates the files *_2-20PC_D100_seqs_for_Resistance_report.fasta* and *_20PC_D100_seqs_for_WG_Subtyping.fasta* in a new directory called *fastas*, used for subtyping analysis and antiviral resistance genotyping. An additional file *_20PC_D30_seqs_for_All_Analyses.fasta* may be created if majoritiy variants at depth of 30 reads have been analysed. New directories *hivdb.stanford.report* and *subtyping* are generated to store the reports of the analyses to be done. Finally a file *_2-20PC_HIV_Genome_map.fasta* is created for numbering and genomic mapping purposes, containing the query sequences aligned to all the gene segments of reference.
 
-* **-d, --data**,  with run location selected (-i), consolidates the data about sample information, the subtyping reports and resistance genotyping results from sequences at depth of 100 reads and frequency of 20PC and 2PC (Majority and Minority Variants, respectively) in an *XLSX* file in the main directory of the INITIO batch.
+* **-d, --data**. This tool decompressed the file *.zip* with the Stanford report from *hivdb.stanford.report* and consolidates the data with the information from *RUNID_sample_list.csv*, *RUNID_NGS_QC.csv*, *Summary_Genomancer_Results_HIV.csv*, and the *CSV files* from *subtyping/comet* and *subtyping/jphmm* for those sequences at depth of 100 reads and frequency of 20PC and 2PC (Majority and Minority Variants, respectively). It creates a file *_NGS_Results_2-20PC_D100.xlsx* in the main directory of the INITIO batch, with the information for all the runs analysed in the same batch. 
 
-* **-m30, --mayority**, it works similar to the argument "--data" but it is specific for those sequences generated at depth of 30 reads and frequency of 20PC (Majority).
+* **-m, --mayority**, it works similar to the argument "--data" but this is specific for those sequences generated at depth of 30 reads and frequency of 20PC (Majority).
 
-Files that the user need to provide for eah estep:
 
- -p 
-puts
-Outputs
+
+<b>
+
+**Figure 1**. Structure of the INITIO project directory. An initial batch (i.e. INITIO2019-2020) contains as many NGS runs as needed to process all the samples of the batch. The NGS run has several subdirectories created by any of the tools (#) and some, which are temporay, are removed when they are not needed any more (+). The symbol ^ indicates the folders and files than need to be transferred from the CLuster to the final destination. At the moment, the user needs to provide some files for some of the tools to carry out therir functions. The tools corresponding to the arguments are displayed on the right side pointing the element of the directory they work on.
+</b>
+
+```
+.
+└── INITIO_Project
+    ├── Batch
+    │   ├── INITIO_Batch_NGS_Results_2-20PC_D100.xlsx                       <--- DATA
+    │   └── NGS_Run
+    │       ├── NGS_Run_NGS_QC.csv                         <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       ├── NGS_Run_sample_list.csv		               <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       ├── Summary_Genomancer_Results_HIV.csv	(^)		                <--- POSTGENOMANCER
+    │       ├── Coverage_Depth_Summary_HIV.csv (^)				            <--- POSTGENOMANCER
+    │       ├── typonomer (# ^)						                        <--- POSTGENOMANCER
+    │       │   └── 1000XX_Sample_ID.subtype.csv
+    │       ├── HIV_genomes.fas
+    │       ├── post-run (# ^)					                            <--- POSTGENOMANCER
+    │       │   ├── env.nex
+    │       │   ├── gag.nex
+    │       │   ├── nef.nex
+    │       │   ├── pol.nex
+    │       │   ├── vif.nex
+    │       │   └── vpu.nex
+    │       ├── quasibams (# ^)					                            <--- POSTGENOMANCER
+    │       │   ├── Sample_ID.1.20PC.fas				                    <--- POSTGENOMANCER
+    │       │   ├── Sample_ID.1.2PC.fas					                    <--- POSTGENOMANCER
+    │       │   ├── Sample_ID.1.tabular					                    <--- POSTGENOMANCER
+    │       │   ├── data_to_clean (+)					                    <--- QUALITY
+    │       │   │   └── Sample_ID.1_all_genes_aligned.fas                   <--- QUALITY
+    │       │   ├── FRAMESHIFT_initial_check_NGS_Run.txt                    <--- QUALITY
+    │       │   ├── Sample_ID.1_Quasibam_FASTA_numbering.xlsx               <--- QUALITY
+    │       │   ├── tmps (+)						                        <--- QUALITY
+    │       │   │   ├── Sample_ID.1_20-2PC_HXB2.fas			                <--- QUALITY
+    │       │   │   └── Sample_ID.1_aligned_to_HXB2.fas			            <--- QUALITY 
+    │       │   ├── FRAMESHIFT_post_cleaning_NGS_Run.txt		            <--- CONFIRMATION
+    │       │   └── Sample_ID.1_2-20PC_HIV_Genome_map.fasta		            <--- FILES
+    │       ├── hivdb.stanford.report (#)				                    <--- FILES
+    │       │   ├── NGS_Run.zip                            <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   └── NGS_Run						                            <--- DATA
+    │       │       ├── MutationList_Sample_ID.1.20PC.csv
+    │       │       ├── PrettyAA_IN.csv
+    │       │       ├── PrettyAA_PR.csv
+    │       │       ├── PrettyAA_RT.csv
+    │       │       ├── Raw_Sample_ID.1.2PC.json
+    │       │       ├── resistanceSummaries.csv
+    │       │       ├── sequenceSummaries.csv
+    │       │       └── unsequencedRegions.csv
+    │       ├── fastas (#)						                            <--- FILES
+    │       │   ├── NGS_Run_20PC_D100_seqs_for_WG_Subtyping.fasta	        <--- FILES
+    │       │   └── NGS_Run_2-20PC_D100_seqs_for_Resistance_report.fasta    <--- FILES
+    │       ├── subtyping (#) 						                        <--- FILES
+    │       │   ├── comet (#)
+    │       │   │   └── results_NGS_Run.csv 		       <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   ├── jphmm (#)
+    │       │   │   └── results_NGS_Run_jpHMM.csv 	       <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   ├── rega (#)
+    │       │   │   └── results_NGS_Run.csv 		       <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   └── rip
+    │       ├── hivdb.stanford.report (#)				                    <--- FILES
+    │       │   ├── NGS_Run.zip				               <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   └── NGS_Run						                            <--- DATA
+    │       │       ├── MutationList_Sample_ID.1.20PC.csv
+    │       │       ├── PrettyAA_IN.csv
+    │       │       ├── PrettyAA_PR.csv
+    │       │       ├── PrettyAA_RT.csv
+    │       │       ├── Raw_Sample_ID.1.2PC.json
+    │       │       ├── resistanceSummaries.csv
+    │       │       ├── sequenceSummaries.csv
+    │       │       └── unsequencedRegions.csv
+    │       └── NGS_Run_Sequencing_results.csv				                <--- DATA
+    └── initio_data_processing
+        ├── hiv_initio_project.py
+        ├── initio_environment.yml
+        └── K03455.1_HXB2.fasta
+
+```
+
+
+
+<b>
+
+**Figure 2**. Example of report generated after using the tool invoke with argument -qc/--quality for checking potential frame shifts due to insertions or deletions and the presence of stop codons in the sequences. The tool was developed as an alternative to [HIV Sequence Locator](https://www.hiv.lanl.gov/content/sequence/LOCATE/locate.html)
+
+</b>
+
+```
+------------------------------------------------------------------------------
+---------------- SAMPLE_ID.1  ------------------------------------------------
+------------------------------------------------------------------------------
+
+SAMPLE_ID.1.20PC	Gag	
+MGARASVLKGEKLDKWEKIRLRPGGRKHYMLKHIVWASRELERFALNPSLLETADGCKQIMQQLQPALQTGTEELRSLYNTVATLYCVHRQIDVKDTKEALDRIEEEQNKCQQKAQQAEAADKGKVSQNYPIIQNLQGQMVHQAISPRTL
+NAWVKVIEEKAFSPEVIPMFTALSEGATPQDLNTMLNTVGGHQAAMQMLKDTINEEAADWDRLHPAQAGPVAPGQIREPRGSDIAGTTSTLQEQITWMTSNPPIPVGDIYKRWIILGLNKIVRMYSPVSILDIKQGPKEPFRDYVDRFFK
+CLRAEQSTQEVKNWMTDTLLVQNANPDCKTILRALGTGATLEEMMTACQGVGGPGHKARVLAEAMSQANNANIMXQRNNFKGPRRPIKCYNCGKEGHLARNCRAPRKKGCWKCGKEGHQMKDCDSGRQANFLGKIWPSHKGRPGNFPQSR
+PEPTAPLEPTAPPAESFRFEETTPAPKQELKDREPLTSLKSLFGNDPLSQ*
+SAMPLE_ID.1.20PC	Pol	Sequence MAY NOT BE in frame. STOP CODON(s) detected along the sequence.
+FFRENLAFPQGEARKFSSEQTRANXPTRANSPTSRELQVRGDNPCSEAGAEGQGTFNFPQITLWQRPLVTVKVGGQIKEALLDTGADDTVLEDINLPGKWKPKMIGGIGGFIKVRQYEQILIEICXKKGYRYSISGTYTCQHNWKKYVDT
+AWMYTKFSN*SH*NCTSKIKARNGWPKG*TMAIDRRENKSLNSNL**NGXGRKNYKNWA*KSI*YSNICHKKRRTALSGXN**ISGNSIRELKIFAKSN*EYHTQQG*KKKKSVTVLDVGDAYFSVPLDENFRKYTAFTIPSTNNAAPGI
+RYQYNVLPQGWKGSPAIFQSSMTKILEPFRKKNPDIVIYQYMDDLYVGSDLEIGQHRTKIEELREHLLKWGLTTPXKKHQKEPPFLWMGYELHPDKWTVQPIQLPDKDSWTVNDIXKLVGKLNWASQIYPGIRVKHMCRLLRGAKALTDI
+VPLTEEAELELAENXEILKEPVHGVYYDPSKDLIAEVQKQGQDQWTYQIYQEPFKNLKTGKYAKMRTAHTNDVKQLTEAVQKNSHGKHSNMG*NS*IQITHPQRHMGDMVDRLLASHLDS*VGVC*YPSPSKTMVPARKRTHSRSRNFLC
+GWSS**GN*XRKSRVCY*QRQAXSGNSN*NNKSEG*ITSNSASFARLRIRSKHSNRLTVCIRNHPSTTR*E*IRISLSDNRTINK*GKDLPVMGTST*RNWRK*TSG*ISQ*WNQESAVSRWDR*GSRRS*KISQQLESNGW*I*SAASS
+SKRNSS*L**MSAKRGSHAWTGRL*SRNLAIRLYTLRRKDHTGSSPCSQWLHRSRGYPSRNRTRNSILHIKISRKMASQSHTHR*WQ*FHQHYS*GCLLVGGYPTGIWNTLQSPKSGSSRIHE*RIKXNHRAGKRSS*TP*DSSTNGSIH
+SQF*KKXGDXGVQCRGKNNRHNSNRYTN*GITKTNYQNSKFSGLLQRQQRPCLERTSQTTLER*RGSSNTG***HKGSAKKESKNH*GLWKTDGRC*LYGRWTG*GS
+SAMPLE_ID.1.20PC	Vif	
+MENRWQVLIVWQVDRMRIRTWNSLVKHHMYVSKKANGWLYRHHYESRHPKVSSEVHIPLGDARLVIKTYWGLQTGERDWHLGHGVSIEWRLGRYSTQVDPGLADRLIHIHYFDCFADSAIRQAILGGIVSHKCEYQAGHNKVGSLQYLAL
+TALLKPKRIRPPLPSVKKLVEDRWNKPQKTRGRRGNHTTNGH*
+SAMPLE_ID.1.20PC	Vpr	
+MEQAPEDQGPQREPYNQWTLELLEELKQEAVRHFPRPWLHNLGQYIYTTYGDTWMGVEALLMMLQQLLFIHFRIGCRHSRIGIMRQRRARNGANRS*
+SAMPLE_ID.1.20PC	Tat1	
+MEPIDPNLESWNHPGSQPKTACTKCYCKRCCYHCQVCFLTKGLGISYGRKKRRQRRRAPPSSEDHQNPVSK
+SAMPLE_ID.1.20PC	Rev1	
+MAGRSGDSDDELLRAVRIIKILYQS
+SAMPLE_ID.1.20PC	Vpu	
+MVQWLDRVDYRIGVGALLIALFIAIVVWIIVYIEYRKLVKQRKIDSLIIRIRERAEDSGNESDGDIEELATVVDMEQLRLLDNL*
+SAMPLE_ID.1.20PC	Gp160	STOP CODON(s) detected along the sequence.
+MRVMGTXRSWLLWWIWSSLGFWIISSESEKTWVTVYYGVPVWREAKATLFCASDAKAYXKEXHNVWATHACVPTDPDPQEIYLQNVTENFNMGTNYMVDQMHEDVISLWDQSLKPCVKLTPLCVTLNCTDCDTSDCTNITSSTSGGDNRM
+GNVTAELKRCAFNVTTEVRDKKKKEKALFYKLDIVSINETNSMYRIINCNTSTIAQACPKISFDPIPIHYCAPAGYAILKCNDKAFNGSGPCNNVSTVQCTHGIKPVVSTQLLLNGSLAEEDIIISSENLESNTKTIIVHLNDSIGIKCI
+RPNNNTRKSIRIGPGQAFYATGEITGDIRKAYCNISRGTWNTTKERVRXKIT*AY**NNNI*TILRRGSRNYNT*L*LWRRIFLLRYNPIVQ*HTQHTAGSRYHTPMQNKTDYKHVAGSRKSNICPSH*RKNNMRFKYHRITINTR*SRN
+RXWN*QNRDN*TWRRKYERQLEK*IIQI*SSRN*PIRNSTHQGKKESGGXRKKRAGLAAVFVGFLGAAGSTMGAASITLTVQARQLLSGIVQQQSNLLKAIEAQQHMLQLTVWGIKQLQARVLAIERYLRDQQLLXMWGCSGKLICTTNV
+PWNSSWSNKSITDIWDNMTWMQWDKEISNYTDIIYRMLEVSQNQQEKNEKDLLELNKWNDLWSWFDITKWLWYIKIFIMIVGGLIGLRIIFAVLSIVNRVRQGYSPLSLQTPIPNSRGRPDRLGGTEEEGGEQDRDRSVRLVSGFLALAW
+DDLRSLCLFSYHRLRDFISLAARAVELLGRSSLRGLQRGWEALKYLKGLGQYWGLELKRSAVSLLDTIAIAVGEGTDXIIEIIRRTCRVIYNIPVRIRQGLEAALQ*
+SAMPLE_ID.1.20PC	Tat2	
+TPIPNSRGRPDRLGGTEEEGGEQDRDRSVRL
+SAMPLE_ID.1.20PC	Rev2	
+TPIPNSRGRPDRLGGTEEEGGEQDRDRSVRLVSGFLALAWDDLRSLCLFSYHRLRDFISLAARAVELLGRSSLRGLQRGWEALKYLKGLGQYWGLELKR
+SAMPLE_ID.1.20PC	Nef	
+MGGKWSKSSIVGWSAIRERIRRTEPAXEGVGTASQDLDKHGALTTSNTAANNEACAWLEAQEETEEVGFPVRPQVPLRPMTYKAAFDLSFFLKEKGGLEGLIYSRKRQDILDLWVYNTQGFFPDWQNYTPGPGVRYPLTFGWCFKLVPVD
+PEEVERMNEGENNCLLHPASQHGMDDPDREILRWKFDSLLARRHMARE
+
+```
 
 
 ## **CONTACT DETAILS**

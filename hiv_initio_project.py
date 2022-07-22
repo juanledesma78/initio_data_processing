@@ -1,5 +1,5 @@
 __version__ = '1.0'
-__date__ = '20/07/2022'
+__date__ = '22/07/2022'
 __author__ = 'Juan Ledesma'
 
 
@@ -28,7 +28,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 
 program_specs = argparse.ArgumentParser(
     prog='hiv_initio_project.py',
-    usage='%(prog)s -i [-p] [-qc] [-c] [-f] [-d] [-m30]',
+    usage='%(prog)s -i [-p] [-qc] [-c] [-f] [-d] [-m]',
     description='The script is written to perfom different functions depending\
                 of the argument selected.\
                 Argument -i/--input is MANDATORY for the functions to work.\
@@ -54,7 +54,7 @@ program_specs.add_argument('-p','--postgenomancer',  #action='store_true',
                 "Summary_Genomancer_Results_HIV.csv" with information about\
                 the analysis by Genomancer. It extracts each fasta sequence\
                 from the file "_genomes.fas" into a new directory called "FASTAs".\
-                [ADDITIONAL ARGUMENT] A value "*m30*" can be used after\
+                [ADDITIONAL ARGUMENT] A value "*mad30*" can be used after\
                 -p/--postgenomancer to produce additional sequences at depth\
                 of 30 reads for Majority variants (20PC) for the same sample.\
                 <WARNING> This tool needs to be run in the HPC cluster to use\
@@ -88,26 +88,29 @@ program_specs.add_argument('-c','--confirmation', action='store_true',
 
 program_specs.add_argument('-f' ,'--files', action='store_true',
             help='with run location selected (-i), takes the recently confirmed\
-            "FASTA" files from the subdirectory "quasibams/data_to_clean" and\
-            creates the files "_2-20PC_D100_seqs_for_Resistance_report.fasta"\
-            and "_20PC_D100_seqs_for_WG_Subtyping.fasta" in a new directory\
-            called "fastas", used for subtyping analysis and antiviral resistance\
-            genotyping. An additional file "_20PC_D30_seqs_for_All_Analyses.fasta"\
-            may be created if majoritiy variants at depth of 30 reads have been\
-            analysed. New directories "hivdb.stanford.report" and "subtyping"\
-            are generated to store the reports of the analyses to be done.\
-            Finally a file "_2-20PC_HIV_Genome_map.fasta" is created for\
-            numbering and genomic mapping purposes, containing the query\
-            sequences aligned to all the gene segments of reference')
+                "FASTA" files from the subdirectory "quasibams/data_to_clean" and\
+                creates the files "_2-20PC_D100_seqs_for_Resistance_report.fasta"\
+                and "_20PC_D100_seqs_for_WG_Subtyping.fasta" in a new directory\
+                called "fastas", used for subtyping analysis and antiviral resistance\
+                genotyping. An additional file "_20PC_D30_seqs_for_All_Analyses.fasta"\
+                may be created if majoritiy variants at depth of 30 reads have been\
+                analysed. New directories "hivdb.stanford.report" and "subtyping"\
+                are generated to store the reports of the analyses to be done.\
+                Finally a file "_2-20PC_HIV_Genome_map.fasta" is created for\
+                numbering and genomic mapping purposes, containing the query\
+                sequences aligned to all the gene segments of reference.')
 
 program_specs.add_argument('-d','--data', action='store_true',
-            help='With run location selected (-i), consolidates the data about sample\
-            information, the subtyping reports and resistance genotyping results from\
-            sequences at depth of 100 reads and frequency of 20PC and 2PC (Majority\
-            and Minority Variants, respectively) in an XLSX file in the main directory\
-            of the INITIO batch.')
+            help='with run location selected (-i), consolidates the data from\
+                "RUNID_sample_list.csv", "RUNID_NGS_QC.csv", "Summary_Genomancer\
+                _Results_HIV.csv", report from subdirectory "subtyping/rega", \
+                "subtyping/comet" and "subtyping/jphmm" and the stanford report\
+                from "hivdb.stanford.report" generated using sequences at depth\
+                of 100 reads and frequency of 20PC and 2PC (Majority and Minority\
+                Variants, respectively) and creates a file "_NGS_Results_2-20PC_\
+                D100.xlsx"" in the main directory of the INITIO batch.')
 
-program_specs.add_argument('-m30','--mayority', action='store_true',
+program_specs.add_argument('-m','--mayority', action='store_true',
             help='It works similar to the argument "--data" but it is specific\
                 for those sequences generated at depth of 30 reads and frequency\
                 of 20PC (Majority).')
@@ -396,7 +399,7 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
                                         "-d", "100",
                                         "-c", str(frequency),
                                         "-n", "N"])
-        if depth == 'M30':
+        if depth == 'MAD30':
             outfile2 = Path('quasibams').joinpath(f'{seq_id}.20PC.D30.fas')
             fasta_header = f'{seq_id}.20PC.D30'
             running_quasibam_ = sp.run(["qb_post_process.pl",
@@ -409,6 +412,8 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
             #    tabular_output = f'quasibams/{seq_id}.tabular'
             #    os.rename(quasibam_file, tabular_output)
             quasibam_file.rename(Path('quasibams').joinpath(f'{seq_id}.tabular'))
+        else:
+            pass
     Depth_dataframe = pd.concat(dataframe_list, axis = 1 )
     Depth_dataframe.index += 1
     Depth_dataframe['Position'] = Depth_dataframe.index #using the index as a column
