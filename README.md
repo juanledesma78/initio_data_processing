@@ -62,7 +62,11 @@ being the value after the argument -p the the *location where conda is installed
 
 ## **USAGE**
 
-The script **hiv_initio_project.py** manages all the tools the method offers. The usage of the script is as followed: 
+The script **hiv_initio_project.py** manages all the tools the method offers. The **conda environment initio** must be activated before using this method by typing in the terminal 
+
+`conda activate initio`
+
+The usage of the script is as followed: 
 
 `python3 /parth/to/hiv_initio_project.py -i [-p] [-qc] [-c] [-f] [-d] [-m]`
 
