@@ -98,38 +98,38 @@ and are explained in detail in the following secction:
 .
 └── INITIO_Project
     ├── Batch
-    │   ├── INITIO_Batch_NGS_Results_2-20PC_D100.xlsx                       <--- DATA
+    │   ├── INITIO_Batch_NGS_Results_2-20PC_D100.xlsx                       	<--- DATA
     │   └── NGS_Run
-    │       ├── NGS_Run_NGS_QC.csv                         <~~~~~~~~~~~~~~~~~~~~ Provided by User
-    │       ├── NGS_Run_sample_list.csv		               <~~~~~~~~~~~~~~~~~~~~ Provided by User
-    │       ├── Summary_Genomancer_Results_HIV.csv	(^)		                <--- POSTGENOMANCER
-    │       ├── Coverage_Depth_Summary_HIV.csv (^)				            <--- POSTGENOMANCER
-    │       ├── typonomer (# ^)						                        <--- POSTGENOMANCER
+    │       ├── NGS_Run_NGS_QC.csv                         	<~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       ├── NGS_Run_sample_list.csv		                <~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       ├── Summary_Genomancer_Results_HIV.csv	(^)		        <--- POSTGENOMANCER
+    │       ├── Coverage_Depth_Summary_HIV.csv (^)				<--- POSTGENOMANCER
+    │       ├── typonomer (# ^)						        <--- POSTGENOMANCER
     │       │   └── 1000XX_Sample_ID.subtype.csv
     │       ├── HIV_genomes.fas
-    │       ├── post-run (# ^)					                            <--- POSTGENOMANCER
+    │       ├── post-run (# ^)					                <--- POSTGENOMANCER
     │       │   ├── env.nex
     │       │   ├── gag.nex
     │       │   ├── nef.nex
     │       │   ├── pol.nex
     │       │   ├── vif.nex
     │       │   └── vpu.nex
-    │       ├── quasibams (# ^)					                            <--- POSTGENOMANCER
-    │       │   ├── Sample_ID.1.20PC.fas				                    <--- POSTGENOMANCER
-    │       │   ├── Sample_ID.1.2PC.fas					                    <--- POSTGENOMANCER
-    │       │   ├── Sample_ID.1.tabular					                    <--- POSTGENOMANCER
-    │       │   ├── data_to_clean (+)					                    <--- QUALITY
-    │       │   │   └── Sample_ID.1_all_genes_aligned.fas                   <--- QUALITY
-    │       │   ├── FRAMESHIFT_initial_check_NGS_Run.txt                    <--- QUALITY
-    │       │   ├── Sample_ID.1_Quasibam_FASTA_numbering.xlsx               <--- QUALITY
-    │       │   ├── tmps (+)						                        <--- QUALITY
-    │       │   │   ├── Sample_ID.1_20-2PC_HXB2.fas			                <--- QUALITY
-    │       │   │   └── Sample_ID.1_aligned_to_HXB2.fas			            <--- QUALITY 
-    │       │   ├── FRAMESHIFT_post_cleaning_NGS_Run.txt		            <--- CONFIRMATION
-    │       │   └── Sample_ID.1_2-20PC_HIV_Genome_map.fasta		            <--- FILES
-    │       ├── hivdb.stanford.report (#)				                    <--- FILES
-    │       │   ├── NGS_Run.zip                            <~~~~~~~~~~~~~~~~~~~~ Provided by User
-    │       │   └── NGS_Run						                            <--- DATA
+    │       ├── quasibams (# ^)					                <--- POSTGENOMANCER
+    │       │   ├── Sample_ID.1.20PC.fas				        <--- POSTGENOMANCER
+    │       │   ├── Sample_ID.1.2PC.fas					        <--- POSTGENOMANCER
+    │       │   ├── Sample_ID.1.tabular					        <--- POSTGENOMANCER
+    │       │   ├── data_to_clean (+)					        <--- QUALITY
+    │       │   │   └── Sample_ID.1_all_genes_aligned.fas                   	<--- QUALITY
+    │       │   ├── FRAMESHIFT_initial_check_NGS_Run.txt                    	<--- QUALITY
+    │       │   ├── Sample_ID.1_Quasibam_FASTA_numbering.xlsx               	<--- QUALITY
+    │       │   ├── tmps (+)						        <--- QUALITY
+    │       │   │   ├── Sample_ID.1_20-2PC_HXB2.fas			        <--- QUALITY
+    │       │   │   └── Sample_ID.1_aligned_to_HXB2.fas			        <--- QUALITY 
+    │       │   ├── FRAMESHIFT_post_cleaning_NGS_Run.txt		        <--- CONFIRMATION
+    │       │   └── Sample_ID.1_2-20PC_HIV_Genome_map.fasta		        <--- FILES
+    │       ├── hivdb.stanford.report (#)				        <--- FILES
+    │       │   ├── NGS_Run.zi					<~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   └── NGS_Run							<--- DATA
     │       │       ├── MutationList_Sample_ID.1.20PC.csv
     │       │       ├── PrettyAA_IN.csv
     │       │       ├── PrettyAA_PR.csv
@@ -138,20 +138,21 @@ and are explained in detail in the following secction:
     │       │       ├── resistanceSummaries.csv
     │       │       ├── sequenceSummaries.csv
     │       │       └── unsequencedRegions.csv
-    │       ├── fastas (#)						                            <--- FILES
-    │       │   ├── NGS_Run_20PC_D100_seqs_for_WG_Subtyping.fasta	        <--- FILES
-    │       │   └── NGS_Run_2-20PC_D100_seqs_for_Resistance_report.fasta    <--- FILES
-    │       ├── subtyping (#) 						                        <--- FILES
+    │       ├── fastas (#)						    	<--- FILES
+    │       │   ├── NGS_Run_20PC_D100_seqs_for_WG_Subtyping.fasta	    	<--- FILES
+    │       │   └── NGS_Run_2-20PC_D100_seqs_for_Resistance_report.fasta	<--- FILES
+    │       ├── subtyping (#) 						    	<--- FILES
     │       │   ├── comet (#)
-    │       │   │   └── results_NGS_Run.csv 		       <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   │   └── results_NGS_Run.csv 		   	<~~~~~~~~~~~~~~~~~~~ Provided by User
     │       │   ├── jphmm (#)
-    │       │   │   └── results_NGS_Run_jpHMM.csv 	       <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   │   ├── Recombination_positions_NGS_Run_jpHMM.txt		<--- JPHMM
+    │       │   │   └── results_NGS_Run_jpHMM.csv				<--- JPHMM
     │       │   ├── rega (#)
-    │       │   │   └── results_NGS_Run.csv 		       <~~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   │   └── results_NGS_Run.csv 		        <~~~~~~~~~~~~~~~~~~~ Provided by User
     │       │   └── rip
-    │       ├── hivdb.stanford.report (#)				                    <--- FILES
-    │       │   ├── NGS_Run.zip				               <~~~~~~~~~~~~~~~~~~~~ Provided by User
-    │       │   └── NGS_Run						                            <--- DATA
+    │       ├── hivdb.stanford.report (#)				        <--- FILES
+    │       │   ├── NGS_Run.zip				       	<~~~~~~~~~~~~~~~~~~~ Provided by User
+    │       │   └── NGS_Run						        <--- DATA
     │       │       ├── MutationList_Sample_ID.1.20PC.csv
     │       │       ├── PrettyAA_IN.csv
     │       │       ├── PrettyAA_PR.csv
@@ -160,7 +161,7 @@ and are explained in detail in the following secction:
     │       │       ├── resistanceSummaries.csv
     │       │       ├── sequenceSummaries.csv
     │       │       └── unsequencedRegions.csv
-    │       └── NGS_Run_Sequencing_results.csv				                <--- DATA
+    │       └── NGS_Run_Sequencing_results.csv					<--- DATA
     └── initio_data_processing
         ├── hiv_initio_project.py
         ├── initio_environment.yml

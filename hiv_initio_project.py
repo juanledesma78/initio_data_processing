@@ -110,7 +110,7 @@ program_specs.add_argument('-d','--data', action='store_true',
                 Variants, respectively) and creates a file "_NGS_Results_2-20PC_\
                 D100.xlsx"" in the main directory of the INITIO batch.')
 
-program_specs.add_argument('-m','--mayority', action='store_true',
+program_specs.add_argument('-m','--majority', action='store_true',
             help='It works similar to the argument "--data" but it is specific\
                 for those sequences generated at depth of 30 reads and frequency\
                 of 20PC (Majority).')
@@ -1795,7 +1795,7 @@ if __name__ == "__main__":
     elif args.data:
         data_consolidation(run_ID, batch, batch_path)
 
-    elif args.mayority:
+    elif args.majority:
         majority_d30(run_ID, batch, batch_path)
     
     #elif args.selection:
