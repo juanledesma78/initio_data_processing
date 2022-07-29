@@ -1,5 +1,5 @@
 __version__ = '1.0'
-__date__ = '22/07/2022'
+__date__ = '28/07/2022'
 __author__ = 'Juan Ledesma'
 
 
@@ -28,23 +28,25 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 
 program_specs = argparse.ArgumentParser(
     prog='hiv_initio_project.py',
-    usage='%(prog)s -i [-p] [-qc] [-c] [-f] [-d] [-m]',
+    usage='%(prog)s --input [-pgen] [-qc] [-c] [-fg] [-j] [-pjp] [-dc] [-md30c]',
     description='The script is written to perfom different functions depending\
                 of the argument selected.\
-                Argument -i/--input is MANDATORY for the functions to work.\
+                Argument --input is MANDATORY for the functions to work.\
                 The other optional arguments are intended to be used one a time.'
                 )
 
-program_specs.add_argument('-i', '--input', required= True, 
+program_specs.add_argument('--input', required= True, #'-i', 
             help='Path to the run containing the data to analyse.\
                 This is REQUIRED for using the tools of the script,\
-                which are selected by the following arguments.')
+                which are selected by the following arguments.\
+                When using parameter -j/--jphmm this is the path\
+                to the FASTA file to analyse')
 
-program_specs.add_argument('-p','--postgenomancer',  #action='store_true',
+program_specs.add_argument('-pgen','--post_genomancer',  #action='store_true', -jp is calling GEnomancer BAD
             nargs='?', const= 'Mm100',
-            help='with run location selected (-i), decompresses the files\
+            help='with input location selected (--input), decompresses the files\
                 "_quasibams.zip","_post-run.zip" and "_typonomer.zip".\
-                It takes the files .tabular stored in "quasibams", produces\
+                It takes the files ".tabular" stored in "quasibams", produces\
                 a file "Coverage_Depth_Summary_HIV.csv" with the coverage\
                 depth for all the sequences and runs the PHE QuasiBAM tool\
                 to generate sequences of Majority and Minority variants\
@@ -52,23 +54,23 @@ program_specs.add_argument('-p','--postgenomancer',  #action='store_true',
                 the files ".nex" from directory "post-run" and files\
                 "_read_counts.tsv" and "_genomes.fas" and creates a file\
                 "Summary_Genomancer_Results_HIV.csv" with information about\
-                the analysis by Genomancer. It extracts each fasta sequence\
-                from the file "_genomes.fas" into a new directory called "FASTAs".\
-                [ADDITIONAL ARGUMENT] A value "*mad30*" can be used after\
-                -p/--postgenomancer to produce additional sequences at depth\
+                the analysis by Genomancer. It extracts each sequence from\
+                the file "_genomes.fas" into a new directory called "FASTAs".\
+                [ADDITIONAL ARGUMENT] A value "mad30" can be used after\
+                -p/--post_genomancer to produce additional sequences at depth\
                 of 30 reads for Majority variants (20PC) for the same sample.\
-                <WARNING> This tool needs to be run in the HPC cluster to use\
-                the PHE QuasiBAM and to get access to the files "_quasibams.zip"\
+                <WARNING> This tool needs to be run in the HPC cluster to get\
+                access to PHE QuasiBAM and to the files "_quasibams.zip"\
                 ,"_post-run.zip" and "_typonomer.zip", "_genomes.fas" and\
                 "_read_counts.tsv"') 
                 # symbol % gives an error if included in help 
 
-program_specs.add_argument('-qc', '--quality', action='store_true',
-            help=' with run location selected (-i), it takes each "TABULAR" file\
+program_specs.add_argument('-qc', '--quality_control', action='store_true',
+            help=' with input location selected (--input), it takes each file ".tabular"\
                 from the directory "quasibams" and generates a new file\
                 "_Quasibam_FASTA_numbering.xlsx", to be used for potential\
                 inspection of positions in the sequences. The tool takes the\
-                FASTA files from each sample located in the same directory and\
+                files ".fas" from each sample located in the same directory and\
                 aligns them to the reference sequence K03455.1 HXB2, saving\
                 the resulting alignmets in a subdirectory "quasibams/tmps".\
                 These alignments are trimmed in sub-alignments corresponding\
@@ -77,43 +79,67 @@ program_specs.add_argument('-qc', '--quality', action='store_true',
                 _initial_check_RUNID.txt" in "quasibams". In a subdirectory\
                 "quasibams/data_to_clean", a file "_aligned_to_HXB2.fas" for\
                 each sample is created for potential sequence editing if needed\
-                , containing the query sequences aligned to the gene segments\
+                , containing the query sequences aligned to all the gene segments\
                 of reference.')
 
 program_specs.add_argument('-c','--confirmation', action='store_true',
-            help='With run location selected (-i), it takes the "FASTA" files\
+            help='with input location selected (--input), it takes the "FASTA" files\
                 from the subdirectory "quasibams/data_to_clean" and repeats\
                 the same evaluation for frame-shifts/stop codons, generating\
                 a file "FRAMESHIFT_post_cleaning_RUNID.txt"')
 
-program_specs.add_argument('-f' ,'--files', action='store_true',
-            help='with run location selected (-i), takes the recently confirmed\
+program_specs.add_argument('-fg' ,'--file_generation', action='store_true',
+            help='with input location selected (--input), takes the clean\
                 "FASTA" files from the subdirectory "quasibams/data_to_clean" and\
                 creates the files "_2-20PC_D100_seqs_for_Resistance_report.fasta"\
                 and "_20PC_D100_seqs_for_WG_Subtyping.fasta" in a new directory\
-                called "fastas", used for subtyping analysis and antiviral resistance\
-                genotyping. An additional file "_20PC_D30_seqs_for_All_Analyses.fasta"\
-                may be created if majoritiy variants at depth of 30 reads have been\
-                analysed. New directories "hivdb.stanford.report" and "subtyping"\
+                called "fastas" in the run directory, used for subtyping analysis\
+                and antiviral resistance genotyping.\
+                An additional file "_20PC_D30_seqs_for_All_Analyses.fasta"\
+                will be created if majoritiy variants at depth of 30 reads have been\
+                analysed as well.\
+                New directories "hivdb.stanford.report" and "subtyping"\
                 are generated to store the reports of the analyses to be done.\
                 Finally a file "_2-20PC_HIV_Genome_map.fasta" is created for\
                 numbering and genomic mapping purposes, containing the query\
                 sequences aligned to all the gene segments of reference.')
 
-program_specs.add_argument('-d','--data', action='store_true',
-            help='with run location selected (-i), consolidates the data from\
+program_specs.add_argument('-j' ,'--jphmm', action='store_true',
+            help='For this tool, --input argument points the location of\
+                a "FASTA" file containing the sequences to be subtyped and\
+                runs jphmm locally. The fasta files should be saved in a\
+                subdirectory called "fastas"\
+                (i.e  /home/phe.gov.uk/user/jpHMM/fastas/INITIO/RUNID_20PC_seqs_for_WG_Subtyping.fasta )\
+                The results are stored in a subdirectory "jphmm/outputs/RunID", where\
+                the software has been installed')
+
+program_specs.add_argument('-pjp' ,'--post_jphmm', 
+            help='This tool takes two arguments: the first one is the normal --input\
+                that point the RUN ID of the data to be analysed and the second one,\
+                provided after -pjp takes the path to the folders(s) cointaing the\
+                subtyping information generated by jphmm.\
+                With these two imputs, it takes the jphmm reports and creates the file\
+                "Recombination_positions_NGS_Run_jpHMM.txt" and "results_NGS_Run_jpHMM.csv".\
+                and saved them in "RunID/subtyping/jphmm". The ".csv" file indicates the \
+                clasification of the sequences after using the tool jpHMM locally.\
+                The ".txt" file shows the regions of the sequences involved in that\
+                subtype clasification, very useful for predicting the breakpoints\
+                in a recombination.TWO INPUITS')
+
+program_specs.add_argument('-dc','--data_consolidation', action='store_true',
+            help='with input location selected (--input), consolidates the data from\
                 "RUNID_sample_list.csv", "RUNID_NGS_QC.csv", "Summary_Genomancer\
-                _Results_HIV.csv", report from subdirectory "subtyping/rega", \
+                _Results_HIV.csv", reports from subdirectory "subtyping/rega", \
                 "subtyping/comet" and "subtyping/jphmm" and the stanford report\
                 from "hivdb.stanford.report" generated using sequences at depth\
                 of 100 reads and frequency of 20PC and 2PC (Majority and Minority\
                 Variants, respectively) and creates a file "_NGS_Results_2-20PC_\
                 D100.xlsx"" in the main directory of the INITIO batch.')
 
-program_specs.add_argument('-m','--majority', action='store_true',
-            help='It works similar to the argument "--data" but it is specific\
-                for those sequences generated at depth of 30 reads and frequency\
-                of 20PC (Majority).')
+program_specs.add_argument('-md30c','--majority_30', action='store_true',
+            help='It works similar to the argument "--data_consolidation" but it\
+                is specific for those sequences generated at depth of 30 reads\
+                and frequency of 20PC (Majority).')
 
 #program_specs.add_argument('-sid','--selection', action='store_true',
 #            help='')
@@ -279,9 +305,6 @@ def frameshift_check_sequence_locator(run_ID, tmps,
     print(f'Report {seqloc_File_Name} generated')
     seqloc_File.write(info_seqcloc)
     seqloc_File.close()
-    print(f'''
-    Process succesfully COMPLETE. 
-    ''')
 
 
 ##############################################################################
@@ -366,6 +389,10 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
     CAN AFFECT THIS FUNCTION. 
     I.E. KeyError: "None of [Index(['I_Desc'], dtype='object')] are in the [index]"
     """
+
+    print(f'''
+    -- Initiating Analysis on Genomancer results -- 
+    ''') 
 
     ''' UNZIP RESULT FILES'''
 
@@ -535,6 +562,9 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
     summary_dataframe.to_csv(Path.cwd().
                 joinpath(f'Summary_Genomancer_Results_{workflow}.csv'), index= False)
 
+    print(f'''
+    -- Process successfully COMPLETE -- 
+    ''')  
 
 ##############################################################################
 
@@ -547,6 +577,10 @@ def qc_for_sequence_analysis(quasibams, ref_seq, data_to_clean, tmps):
     present in the sequences is created and saved in "quasibams".
     An XLSX file containing the Quasibam file with an extra column with the 
     approximate positions according to the fasta 20 PC is created."""
+    
+    print(f'''
+    -- Initiating Quality Control (QC) for sequences -- 
+    ''') 
     
     if data_to_clean.exists() and tmps.exists():
         shutil.rmtree(data_to_clean)
@@ -658,7 +692,10 @@ def qc_for_sequence_analysis(quasibams, ref_seq, data_to_clean, tmps):
 
     '''GENERATION OF REPORT TO CHECK FRAMESHIFTS'''
     #iu.frameshift_check_sequence_locator(run_ID, tmps, quasibams)
-    frameshift_check_sequence_locator(run_ID, tmps, quasibams)    
+    frameshift_check_sequence_locator(run_ID, tmps, quasibams)
+    print(f'''
+    -- QC successfully COMPLETE -- 
+    ''')    
 
 
 ##############################################################################
@@ -668,6 +705,10 @@ def confirmation_of_sequence_cleaning(run_ID, ref_seq, quasibams,
 
     """Creates a second TXT report in "quasibams" to confirm the frames and the
     presence of stop codons in the sequences after modification."""
+
+    print(f'''
+    -- Initiating confirmation of Quality for sequences -- 
+    ''') 
     
     os.chdir(quasibams)
     for fasta in data_to_clean.glob('*.fas'):
@@ -690,7 +731,9 @@ def confirmation_of_sequence_cleaning(run_ID, ref_seq, quasibams,
             print(f'Generating temporary alignment {Path(tmp_file_name).name}')
 
     frameshift_check_sequence_locator(run_ID, tmps, quasibams, check=False)
-
+    print(f'''
+    -- Process successfully COMPLETE -- 
+    ''')  
 
 ##############################################################################
 
@@ -703,6 +746,10 @@ def file_generation_for_data_analysis(run_ID, ref_seq, quasibams,
     It also craetes the folders hivdb.stanford.report and subtyping where to save 
     the results after doing the data analysis"""
     
+    print(f'''
+    -- Initiating generation of FASTA files for data analysis -- 
+    ''') 
+
     # current working directory is run path
     antiviral_all_freqs_depth100 = []
     subtyping_majority_depth100 = []
@@ -800,6 +847,7 @@ def file_generation_for_data_analysis(run_ID, ref_seq, quasibams,
         SeqIO.write(majority_depth30_data, majority_depth30_File , 'fasta')
         print(f'File {majority_depth30_File.name} generated')
 
+    print(f'Files are available in {run_ID}/fastas')
     '''ORIGINAL 2 AND 20 PC FASTA NOT NEEDED ANYMORE'''
     #temporary_files = str(data_to_clean).replace('data_to_clean','tmps')
     shutil.rmtree(Path(tmps))
@@ -808,8 +856,136 @@ def file_generation_for_data_analysis(run_ID, ref_seq, quasibams,
         os.remove(frequency_fasta) # 2-20PC
     
     print(f'''
-    Process succesfully COMPLETE. 
+    File generation successfully COMPLETE. 
     ''')
+
+
+
+##############################################################################
+def running_local_jphmm(run_info):
+    # It needs to print the statements Process killed 
+
+    print(f'''
+    -- Subtyping by jpHMM in PROCESS -- 
+    ''') 
+
+    fasta_file_path = Path(run_info)
+    run_id = fasta_file_path.stem
+    outputs = Path(str(fasta_file_path.parent).\
+                        replace('fastas', 'outputs')).joinpath(run_id)
+
+    run_parts = str(run_info).split('/fastas/')
+    local_jpHMM = Path(run_parts[0])
+    inputs = Path('fastas').joinpath(run_parts[1])
+
+    os.chdir(local_jpHMM)
+
+    try:
+
+        os.makedirs(outputs) # add exception if they exist
+        run_jphmm = sp.run(['src/jpHMM','-s', f'{inputs}', '-o', f'{outputs}', 
+            '-v', 'HIV', 
+            '-P', 'priors' ,
+            '-I' ,'input', 
+            '-Q', 'blat'], #text= True, capture_output=True)
+            stdout=sp.PIPE, stderr=sp.PIPE )
+        ##############################################
+        ##   It needs to show the ID of the sequences analysed
+        #  and potential Process killed
+        #  for the user to re-run the remaining sequences 
+        ###############################################
+        print(run_jphmm.stdout)
+        print(run_jphmm.stderr)
+        ###############################################
+        #if run_jphmm.returncode == 0:
+        #    print(f'Process successfully performed')
+        #else:
+        #    print("Something went wrong")
+
+
+
+        ##############################################
+
+        print(f'''
+    -- Subtyping complete -- 
+            ''') 
+
+    except FileExistsError: 
+        print(f'''
+    < DIRECTORY ERROR>
+    The directory "{outputs}" already exists.
+    The run may have been analysed before. 
+    ''')    
+        sys.exit(1)
+
+
+##############################################################################
+def process_jphmm_results(jphmm_report, run_ID):
+
+    print(f'''
+    -- PROCESSING jphmm subtyping results for {run_ID} -- 
+    ''') 
+    
+    #jphmm_report = args.postjphmm
+    jphmm_destination = Path.cwd().joinpath('subtyping/jphmm')
+
+    jphmm_results_path = Path.cwd().joinpath(jphmm_report)
+    jphmm_run_ID = ''.join(re.findall(r'Run\d*_NGS\d*', jphmm_results_path.stem))
+    print(f'Analysing jpHMM results for {jphmm_run_ID}\n')
+    
+    if jphmm_run_ID == run_ID:
+    
+        os.chdir(jphmm_results_path.parent)
+        subtype_data = []
+        position_data = []
+        for folder in Path.cwd().glob(f'{run_ID}*'):
+            print(f'< Data from directory {folder.name} >')
+            subtyping_summary = pd.DataFrame(columns=['Sample ID','Sequence ID', 
+                                                    'Other', 'Subtype'])
+            with open(f'{folder}/recombination_without_positions.txt','r') as report:
+
+                lines = report.readlines()
+                for line in lines:
+                    if '>' in line:
+                        info = line.rstrip().replace('>','').split('\t')
+                        depth =''
+                        if 'D30' in info[0]:
+                            depth = '_D30'
+                        sample_ID = re.sub(r'_[0-9](_|.)(20|2)PC(.D30)*' ,'' ,info[0]) ### identify the D30
+                        fasta_header =info[0].replace('_','.')
+                        info.insert(0, sample_ID)
+                        print(f'- SAMPLE id: {sample_ID}, FASTA id: {fasta_header}')
+                        info.pop(2) # returns the subtype
+                        subtype_data.append(info)
+
+            with open(f'{folder}/recombination.txt','r') as report:
+                lines = report.readlines()
+                for line in lines:
+                    if '#' not in line:
+                        if '>' in line:
+                            line = line.replace('_', '.')
+                            line = re.sub(r'\(bw=\de-\d+\)', '', line)    
+                        position_data.append(line)
+
+
+        subtyping_summary = pd.DataFrame(subtype_data, columns=['Id','Sequence', 'JPHMM'])
+        subtyping_summary['Sequence'] = subtyping_summary['Sequence'].str.replace('_','.') 
+        '''destination'''
+        os.chdir(jphmm_destination)
+
+        subtyping_summary.to_csv(f'results_{run_ID}{depth}_jpHMM.csv', index= False)
+        with open(f'Recombination_positions_{run_ID}{depth}_jpHMM.txt', 'w') as recombinants:
+            recombinants.write(''.join(position_data))
+
+        print(f'''
+    -- Result processing succesfully COMPLETE -- 
+    ''') 
+    
+    else:
+        print(f'''
+    {run_ID} to be analysed does not match the jpHMM report id {jphmm_run_ID}
+        ''')
+
 
 
 ##############################################################################
@@ -1013,12 +1189,16 @@ def subtyping_data(run_ID, sample_list, Depth=''):
 
 ##############################################################################
  
-def data_consolidation(run_ID, batch, batch_path):
+def data_consolidator(run_ID, batch, batch_path):
 
     """ Consolidates all the sample information about the subtyping and resistance
     genotyping using sequences at depth of 100 reads and frequency of 20PC and 2PC 
     (Majority and Minority Variants, respectively) in an XLSX file in the main 
     directory of the INITIO batch."""
+
+    print(f'''
+    -- Initiating consolidation of data for {run_ID} -- 
+    ''') 
 
     sample_list = sample_info(run_ID)
     sample_list = sequencing_metrics(sample_list)
@@ -1460,7 +1640,8 @@ def data_consolidation(run_ID, batch, batch_path):
                     wb.save(excel_file_name)
 
             print(f'''
-    Process succesfully COMPLETE. 
+    -- Data consolidation for {run_ID} succesfully COMPLETE --
+    
     Check the file "{batch}_NGS_Results_2-20PC_D100.xlsx" to see the new data. 
     ''')
 
@@ -1490,6 +1671,10 @@ def majority_d30(run_ID, batch, batch_path):
     genotyping using sequences at depth of 30 reads and frequency of 20PC
     (Majority Variants, respectively) in an XLSX file in the main 
     directory of the INITIO batch."""
+
+    print(f'''
+    -- Initiating data consolidation of Majority Variants at Depth of 30 reads for {run_ID} -- 
+    ''') 
     
     Depth30 = '_D30'
     sample_list = sample_info(run_ID)
@@ -1744,7 +1929,9 @@ def majority_d30(run_ID, batch, batch_path):
                     wb.save(excel_file_name)
 
             print(f'''
-    Process succesfully COMPLETE. 
+            
+    -- Data consolidation of Majority Variants Depth 30 for {run_ID} succesfully COMPLETE -- 
+
     Check the file "{batch}_NGS_Results_Majority_Variants{Depth30}.xlsx" to see the new data. 
     ''')
 
@@ -1765,48 +1952,83 @@ def majority_d30(run_ID, batch, batch_path):
                 ''')
         sys.exit(1)
 
-
 ##############################################################################
+
 
 if __name__ == "__main__":
     
-    run_info = args.input
-
-    run_path, run_ID, batch_path, \
-    batch, project, ref_seq, \
-    quasibams, data_to_clean, tmps = parsing_paths(run_info)
-
-    #parsing_p[1] == run_path
-    if args.postgenomancer:
-        depth = args.postgenomancer.upper()
-        postgenomancer(run_ID, depth)
-
-    elif args.quality:
-        qc_for_sequence_analysis(quasibams, ref_seq, data_to_clean, tmps)
-
-    elif args.confirmation:
-        confirmation_of_sequence_cleaning(run_ID, ref_seq, quasibams, 
-                                        data_to_clean, tmps)
-
-    elif args.files:
-        file_generation_for_data_analysis(run_ID, ref_seq, quasibams, 
-                                        data_to_clean, tmps)
-
-    elif args.data:
-        data_consolidation(run_ID, batch, batch_path)
-
-    elif args.majority:
-        majority_d30(run_ID, batch, batch_path)
     
-    #elif args.selection:
-    #    fasta_input = run_path
-    #    ID_file = 'optional value'
-    #    extracting_fastas_by_id_selection(fasta_input, ID_file)
+    if Path(args.input).is_dir():
 
-    else:
+        run_info = args.input
+
+        run_path, run_ID, batch_path, \
+        batch, project, ref_seq, \
+        quasibams, data_to_clean, tmps = parsing_paths(run_info)
+
+        print(f'> Processing data from directory {run_ID}')
         
-        print(f'''
-Please check the help displayed above and enter an argument. 
+        
+        if args.post_genomancer:
+            depth = args.post_genomancer.upper()
+            postgenomancer(run_ID, depth)
+
+        elif args.quality_control:
+            qc_for_sequence_analysis(quasibams, ref_seq, data_to_clean, tmps)
+
+        elif args.confirmation:
+            confirmation_of_sequence_cleaning(run_ID, ref_seq, quasibams, 
+                                            data_to_clean, tmps)
+
+        elif args.file_generation:
+            file_generation_for_data_analysis(run_ID, ref_seq, quasibams, 
+                                            data_to_clean, tmps)
+        
+        elif args.post_jphmm:
+
+            jphmm_report = args.post_jphmm
+            process_jphmm_results(jphmm_report,  run_ID)
+
+        elif args.data_consolidation:
+            data_consolidator(run_ID, batch, batch_path)
+
+        elif args.majority_30:
+            majority_d30(run_ID, batch, batch_path)
+
+        else:
+            print(f'''
+Please enter --input and one of the following argument:
+
+-pgen, --post_genomancer 
+-qc, --quality_control
+-c, --confirmation
+-fg, --file_generation
+-j, --jphmm
+-pjp, --post_jphmm
+-dc, --data_consolidation
+-md30c, --majority_30 
+
+If needed check the help displayed above. 
+
 Cheers!
 {program_specs.print_help()}
+    ''')    
+
+    if Path(args.input).is_file():
+
+        # this is the only file that the CLI takes
+
+        run_info = args.input
+        file_name = Path(run_info).name
+        print(f'> Processing data from file {file_name}')
+    
+        if args.jphmm:
+            running_local_jphmm(run_info)
+
+        else:
+            print(f'''
+Please select a specific FASTA file to analyse using --input 
+and enter the argument -j or --jphmm
+Cheers!
     ''')
+
