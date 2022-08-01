@@ -1,5 +1,5 @@
 __version__ = '1.0'
-__date__ = '28/07/2022'
+__date__ = '01/08/2022'
 __author__ = 'Juan Ledesma'
 
 
@@ -31,7 +31,7 @@ program_specs = argparse.ArgumentParser(
     usage='%(prog)s --input [-pgen] [-qc] [-c] [-fg] [-j] [-pjp] [-dc] [-md30c]',
     description='The script is written to perfom different functions depending\
                 of the argument selected.\
-                Argument --input is MANDATORY for the functions to work.\
+                Argument --input is REQUIRED for the functions to work.\
                 The other optional arguments are intended to be used one a time.'
                 )
 
@@ -863,7 +863,7 @@ def file_generation_for_data_analysis(run_ID, ref_seq, quasibams,
 
 ##############################################################################
 def running_local_jphmm(run_info):
-    # It needs to print the statements Process killed 
+    
 
     print(f'''
     -- Subtyping by jpHMM in PROCESS -- 
@@ -880,6 +880,8 @@ def running_local_jphmm(run_info):
 
     os.chdir(local_jpHMM)
 
+    for fasta_seq in SeqIO.parse(inputs, 'fasta'): 
+        print(f'Analysing sequence {fasta_seq.id}')
     try:
 
         os.makedirs(outputs) # add exception if they exist
@@ -888,14 +890,14 @@ def running_local_jphmm(run_info):
             '-P', 'priors' ,
             '-I' ,'input', 
             '-Q', 'blat'], #text= True, capture_output=True)
-            stdout=sp.PIPE, stderr=sp.PIPE )
+            )#stdout=sp.PIPE, stderr=sp.PIPE )
         ##############################################
         ##   It needs to show the ID of the sequences analysed
         #  and potential Process killed
         #  for the user to re-run the remaining sequences 
         ###############################################
-        print(run_jphmm.stdout)
-        print(run_jphmm.stderr)
+        #print(run_jphmm.stdout)
+        #print(run_jphmm.stderr)
         ###############################################
         #if run_jphmm.returncode == 0:
         #    print(f'Process successfully performed')
@@ -1183,7 +1185,7 @@ def subtyping_data(run_ID, sample_list, Depth=''):
     ''')
         sys.exit(1)
     
-    sample_list['SCUEAL'] = '' # just in case
+    sample_list['SCUEAL'] = '' # just in case we want to add it later on for WG
     return sample_list
 
 
@@ -2015,8 +2017,6 @@ Cheers!
     ''')    
 
     if Path(args.input).is_file():
-
-        # this is the only file that the CLI takes
 
         run_info = args.input
         file_name = Path(run_info).name
