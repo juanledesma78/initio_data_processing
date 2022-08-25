@@ -32,7 +32,7 @@ One of these distributions ([Anaconda](https://www.anaconda.com/products/individ
 
 [Git](https://git-scm.com/) is used to download the repository into the subdirectory **"Antiviral Unit/Project - INITiO"** by typing in a terminal:
 
-`git clone https://gitlab.phe.gov.uk/Juan.Ledesma/initio_data_processing.git`
+`git clone https://github.com/juanledesma78/initio_data_processing.git`
 
 , which will create a new directory with the files:
 
