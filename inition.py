@@ -1,7 +1,6 @@
 __version__ = '1.0'
-__date__ = '24/08/2022'
+__date__ = '25/08/2022'
 __author__ = 'Juan Ledesma'
-
 
 import argparse
 import pandas as pd
@@ -28,7 +27,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 
 
 program_specs = argparse.ArgumentParser(
-    prog='hiv_initio_project.py',
+    prog='inition.py',
     usage='%(prog)s --input [-pgen] [-qc] [-c] [-fg] [-j] [-pj] [-dc] [-majodc]',
     description='The script is written to perfom different functions depending\
                 of the argument selected.\
@@ -386,10 +385,6 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
     I.E. KeyError: "None of [Index(['I_Desc'], dtype='object')] are in the [index]"
     """
 
-    #print(f'''
-    #-- Initiating Analysis on Genomancer results -- 
-    #''') 
-
     ''' UNZIP RESULT FILES'''
 
     if Path.cwd().joinpath('quasibams').exists() == False:
@@ -412,6 +407,7 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
         quasi_df = pd.read_csv(quasibam_file , sep = "\t")
         quasi_df.rename(columns={'Depth': seq_id}, inplace = True)
         dataframe_list.append(quasi_df[seq_id])
+        logging.info(seq_id)
 
         for frequency in frequency_range:
             outfile = Path('quasibams').joinpath(f'{seq_id}.{frequency}PC.fas')
@@ -435,9 +431,12 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
                                     "-n", "N"])
             #    tabular_output = f'quasibams/{seq_id}.tabular'
             #    os.rename(quasibam_file, tabular_output)
-            quasibam_file.rename(Path('quasibams').joinpath(f'{seq_id}.tabular'))
+            #quasibam_file.rename(Path('quasibams').joinpath(f'{seq_id}.tabular'))
         else:
             pass
+
+        quasibam_file.rename(Path('quasibams').joinpath(f'{seq_id}.tabular'))
+    
     Depth_dataframe = pd.concat(dataframe_list, axis = 1 )
     Depth_dataframe.index += 1
     Depth_dataframe['Position'] = Depth_dataframe.index #using the index as a column
@@ -564,9 +563,6 @@ def postgenomancer(run_ID, depth, workflow='HIV'):
     summary_dataframe.to_csv(Path.cwd().
                 joinpath(f'Summary_Genomancer_Results_{workflow}.csv'), index= False)
 
-    #print(f'''
-    #-- Process successfully COMPLETE -- 
-    #''')  
 
 ##############################################################################
 
@@ -579,10 +575,6 @@ def qc_for_sequence_analysis(quasibams, ref_seq, data_to_clean, tmps):
     present in the sequences is created and saved in "quasibams".
     An XLSX file containing the Quasibam file with an extra column with the 
     approximate positions according to the fasta 20 PC is created."""
-    
-    #print(f'''
-    #-- Initiating Quality Control (QC) for sequences -- 
-    #''') 
     
     if data_to_clean.exists() and tmps.exists():
         shutil.rmtree(data_to_clean)
@@ -693,12 +685,8 @@ def qc_for_sequence_analysis(quasibams, ref_seq, data_to_clean, tmps):
         workbook.save(Path(excel_file))
 
     '''GENERATION OF REPORT TO CHECK FRAMESHIFTS'''
-    #iu.frameshift_check_sequence_locator(run_ID, tmps, quasibams)
     frameshift_check_sequence_locator(run_ID, tmps, quasibams)
-    #print(f'''
-    #-- QC successfully COMPLETE -- 
-    #''')    
-
+    
 
 ##############################################################################
 
@@ -868,7 +856,6 @@ def running_local_jphmm(run_info):
         logging.info(f'Reading sequence {fasta_seq.id}')
 
     try:
-
         os.makedirs(outputs) # add exception if they exist
         run_jphmm = sp.run(['src/jpHMM','-s', f'{inputs}', '-o', f'{outputs}', 
             '-v', 'HIV', 
@@ -980,6 +967,10 @@ def sample_info(run_ID):
         sample_list = pd.read_csv(Path.cwd().\
                                 joinpath(f'{run_ID}_sample_list.csv'))
         sample_list['NGS Run'] = run_ID
+
+        #sample_list['Period'] = pd.to_datetime(sample_list['Period'], format='%y%m%d%H%M%S')
+        #sample_list['Period'] = sample_list['Period'].dt.year
+        #logging.info(f'{sample_list["Period"]}')
         
         #QC_df = pd.read_csv(Path.cwd().joinpath(f'{run_ID}_NGS_QC.csv'))
         QC_df = pd.read_csv(Path.cwd().joinpath(f'{run_ID}_NGS_QC.csv'),\
@@ -1007,7 +998,7 @@ def sample_info(run_ID):
         sample_list = sample_list[['RS ID', 'NGS Run', 'Period','Original VL',
                     'RT-qPCR Ct','Lib qPCR Ct', 'Total DNA (ng/µl)',
                     'Pool Number','NGS processing output']]
-        logging.info('Sample data added') 
+        logging.info(f'Data from {run_ID}_sample_list.csv and {run_ID}_NGS_QC.csv added') 
         return sample_list
     
     except FileNotFoundError: 
@@ -1066,7 +1057,7 @@ def sequencing_metrics(sample_list):
                                         left_on='RS ID',
                                         right_on='Sample ID')
         sample_list.drop('Sample ID', axis=1, inplace=True)
-        logging.info('Sequencing metrics information added')
+        logging.info('NGS metrics added')
         return sample_list
         
     
@@ -1119,9 +1110,11 @@ def subtyping_data(run_ID, sample_list, Depth=''):
     #pandas.errors.ParserError: Error tokenizing data. C error: 
     # Expected 1 fields in line 4, saw 2 for some sequences the subtyping 
     # is weird a affect the csv file and the tabs
+    # this can happend when the comet result file has truncated rows.
+    # althought the extension of the file is CSv, it is a TSV file
+    # any manual modification in the COMET file, saved as csv file will affect read_csv sep='\t'
     try:
         comet_results = Path.cwd().joinpath('subtyping/comet')
-        #any manual modification in the COMET file, saved as csv file will affect this line
         comet_df = pd.read_csv(comet_results.joinpath(f'results_{run_ID}{Depth}.csv'), 
                                 sep='\t')
         comet_df['Contig ID'] = comet_df['name'].\
@@ -1175,6 +1168,8 @@ def subtyping_data(run_ID, sample_list, Depth=''):
 
 def fasta_batches(run_ID, sample_list, depth= 100):
     
+    logging.info('Creation of batches of FASTA sequences in process')
+
     if depth == 100:
         report_file = '2-20PC_D100_seqs_for_Resistance_report.fasta'
         batch_file = 'sequences_2-20_PC_Depth_100.fasta'
@@ -1188,9 +1183,10 @@ def fasta_batches(run_ID, sample_list, depth= 100):
     batches = batches['Period'].tolist()
 
     if Path.cwd().joinpath('FASTA_sequences').exists():
+        logging.info('Accessing directory FASTA_sequences')
         pass
     else:
-        logging.info('Creating folder FASTA_sequences')
+        logging.info('Creating directory FASTA_sequences to store the sequences')
         os.mkdir(Path.cwd().joinpath('FASTA_sequences'))
      
     for period in batches:
@@ -1203,8 +1199,7 @@ def fasta_batches(run_ID, sample_list, depth= 100):
             'fasta'):
             for contig in contigs:           
                 if contig in seq.id:
-                    #print(contig, f'Period_{period}', seq.id)
-                    logging.info(f'Period: {period}, Contig: {contig} , Sequence: {seq.id}')
+                    logging.info(f'INITIO{period}, Contig: {contig} , Sequence ID: {seq.id}')
                     new_sequences.append(seq)
         
         period_fasta_file = Path.cwd().joinpath(
@@ -2012,32 +2007,31 @@ if __name__ == "__main__":
             logging.info(f'Generation of FASTA files for data analysis {run_ID}')
             file_generation_for_data_analysis(run_ID, ref_seq, quasibams, 
                                             data_to_clean, tmps)
-            logging.info('File generation successfully COMPLETE for {run_ID}')
+            logging.info(f'File generation successfully COMPLETE for {run_ID}')
         
         elif args.post_jphmm:
             jphmm_report = args.post_jphmm
-            logging.info('Processing jphmm subtyping results for {run_ID}')
+            logging.info(f'Processing jphmm subtyping results for {run_ID}')
             process_jphmm_results(jphmm_report,  run_ID)
-            logging.info('Process succesfully COMPLETE for {run_ID}')
+            logging.info(f'Process succesfully COMPLETE for {run_ID}')
 
         elif args.data_consolidation:
-            logging.info(f'Consolidation of data for {run_ID}, variants at 2 and 20% frequency, depth 100 reads')
+            logging.info(f'Consolidation of data for {run_ID}: variants at 2 and 20% frequency, depth 100 reads')
             data_consolidator(run_ID, batch, batch_path)
             logging.info(f'Data consolidation for {run_ID} successfully COMPLETE.')
             logging.info(f'Check the directory "{batch}/FASTA_sequences" for new updates in the FASTA files.')
-            logging.info(f'Check the file "{batch}_NGS_Results_2-20PC_D100.xlsx" to see the new data.')
+            logging.info(f'Check the file "{batch}_NGS_Results_2-20PC_D100.xlsx" for updates on data.')
 
         elif args.majority_30:
-            logging.info(f'Consolidation of data for {run_ID}, majority variants, depth 30 reads')
+            logging.info(f'Consolidation of data for {run_ID}: majority variants (20%), depth 30 reads')
             majority_d30(run_ID, batch, batch_path)
             logging.info(f'Data consolidation for {run_ID} successfully COMPLETE.')
-            logging.info(f'Check the directory "{batch}/FASTA_sequences" for new updates in the FASTA files.')
-            logging.info(f'Check the file "{batch}_NGS_Results_Majority_Variants_Depth_30.xlsx" to see the new data.')
+            logging.info(f'Check the directory "{batch}/FASTA_sequences" for updates in the FASTA files.')
+            logging.info(f'Check the file "{batch}_NGS_Results_Majority_Variants_Depth_30.xlsx" for new data.')
 
         else:
             logging.info(f'{program_specs.print_help()}')
             logging.warning(f'''
-
 Please enter --input and one of the following argument according to the step to carry out:
 
 1) Analysis of data after using pipeline genomancer: -pgen, --post_genomancer 
@@ -2053,7 +2047,6 @@ If needed check the help displayed above.
 
 Cheers!
 ''')
-
 
     if Path(args.input).is_file():
 
@@ -2072,5 +2065,3 @@ Please select a specific FASTA file to analyse using --input
 and enter the argument -j or --jphmm
 Cheers!
     ''')
-
-#"""
