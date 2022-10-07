@@ -1,5 +1,5 @@
-__version__ = '1.0'
-__date__ = '25/08/2022'
+__version__ = '1.1'
+__date__ = '07/10/2022'
 __author__ = 'Juan Ledesma'
 
 import argparse
@@ -1240,7 +1240,7 @@ def data_consolidator(run_ID, batch, batch_path):
 
     if stanford_results.joinpath(f'{run_ID}.zip').is_file(): 
 
-        if Path.cwd().joinpath(run_ID).exists() == False: ##############: #
+        if Path.cwd().joinpath(run_ID).exists() == False: ############## : # 
 
             sp.run(['unzip','-j', f'{run_ID}.zip', '-d', f'{run_ID}'])#, text=True)
 
@@ -1336,58 +1336,123 @@ def data_consolidator(run_ID, batch, batch_path):
                                     'IN End_2-20%','Subtype (%)_2-20%', f'{Pcnt_Mix}_2-20%',
                                     ])
                     'FILTERS'
-                    'Minumun coverage for each protein'
-                    AAcoverage = (SeqSummary20_2PC['PR Start_>20%']<=30)\
-                                & (SeqSummary20_2PC['PR End_>20%'] >=90)\
-                                & (SeqSummary20_2PC['RT Start_>20%']<=65)\
-                                & (SeqSummary20_2PC['RT End_>20%'] >=215)\
-                                & (SeqSummary20_2PC['IN Start_>20%']<=66)\
-                                & (SeqSummary20_2PC['IN End_>20%'] >=263)
-                
+                    
+                    # 'Minumun coverage for each protein'
+                    # AAcoverage = (SeqSummary20_2PC['PR Start_>20%']<=30)\
+                    #             & (SeqSummary20_2PC['PR End_>20%'] >=90)\
+                    #             & (SeqSummary20_2PC['RT Start_>20%']<=65)\
+                    #             & (SeqSummary20_2PC['RT End_>20%'] >=215)\
+                    #             & (SeqSummary20_2PC['IN Start_>20%']<=66)\
+                    #             & (SeqSummary20_2PC['IN End_>20%'] >=263)
+                    
+                    '''Columns for minimun coverage'''
+
+                    PR_coverage = (SeqSummary20_2PC['PR Start_>20%']<=30)\
+                                & (SeqSummary20_2PC['PR End_>20%'] >=90)
+                    SeqSummary20_2PC['PR min aa coverage'] = PR_coverage.map({
+                                                                        True: 'Yes', 
+                                                                        False: 'No'})
+                    
+                    RT_coverage =  (SeqSummary20_2PC['RT Start_>20%']<=65)\
+                               & (SeqSummary20_2PC['RT End_>20%'] >=215)
+                    SeqSummary20_2PC['RT min aa coverage'] = RT_coverage.map({
+                                                                        True: 'Yes', 
+                                                                        False: 'No'})
+                    
+                    IN_coverage = (SeqSummary20_2PC['IN Start_>20%']<=66)\
+                                  & (SeqSummary20_2PC['IN End_>20%'] >=263)
+                    SeqSummary20_2PC['IN min aa coverage'] = IN_coverage.map({
+                                                                        True: 'Yes', 
+                                                                        False: 'No'})
+
+                    '''Genes available for analysis'''
+                    genes = SeqSummary20_2PC['Genes_>20%'].notnull()
+
+
                     '''Maximum number of APOBEC3G/F hypermutated AAs	
-                    3 + 2 + 3 (RT, PR, IN, respectively)'''
+                    3 + 2 + 3 (RT, PR, IN, respectively)
+                    The column Num Apobec Mutations does not include 
+                    any X (changes corresponding to ntNN or NNN)
+                    '''
                     apobec = SeqSummary20_2PC['Num Apobec Mutations_>20%'] <= 8
 
+
                     '''Maximum number of highly unusual AA mutations
-                    15	8	10 (RT, PR, IN, respectively)'''
+                    15	8	10 (RT, PR, IN, respectively)
+                    The column Num Apobec Mutations does not include 
+                    any X (changes corresponding to ntNN or NNN)
+                    '''
                     unusual = SeqSummary20_2PC['Num Unusual Mutations_>20%']<=33
 
                     '''Maximum number of stop codons
                     + unpublished AA insertions or deletions
                     + highly ambiguous nucelotides (B,D,H,V,N)
-                    4	2	3 (RT, PR, IN, respectively)'''
-                    bdhvn = SeqSummary20_2PC[f'{Num_BDHVN}_>20%']<=9
-                
+                    4	2	3 (RT, PR, IN, respectively)
+                    The column BDHVN includes X (changes corresponding to ?NN or NNN)
+                    This needs to be filter by adding the columns 
+                    Num Stop Codons +
+                    Num Insertions + Num Deletions
+                    Num BDHVN (after removing number of Xs due to NNN/?NN)
+
+                    '''
+                    SeqSummary20_2PC['Num_StopIndelsBDHVN_>20%'] = SeqSummary20_2PC['Num Insertions_>20%'] +\
+                                                                SeqSummary20_2PC['Num Deletions_>20%'] +\
+                                                                SeqSummary20_2PC['Num Stop Codons_>20%']
+                    
+                    X_in_BDHVN = [x.count('X') for x in SeqSummary20_2PC[f'{BDHVN}_>20%']]
+                    SeqSummary20_2PC[f'{Num_BDHVN}_>20%'] = SeqSummary20_2PC[f'{Num_BDHVN}_>20%'] \
+                                                            - X_in_BDHVN
+                    SeqSummary20_2PC['Num_StopIndelsBDHVN_>20%'] = SeqSummary20_2PC['Num_StopIndelsBDHVN_>20%'] +\
+                                                                SeqSummary20_2PC[f'{Num_BDHVN}_>20%']  
+                    
+                    StopIndelAmbiguous = SeqSummary20_2PC['Num_StopIndelsBDHVN_>20%']<=9
+
+                    
+                    #bdhvn = SeqSummary20_2PC[f'{Num_BDHVN}_>20%']<=9
+
                     #'Once the results are filtered, presence of Ns in pol. 
                     # THIS CAN BE VERY STRINGENT!!!'
                     #NsInPRRTIN = (SeqSummary20_2PC['PR Other_>20%'].str.contains('X'))\
                     #            & (SeqSummary20_2PC['RT Other_>20%'].str.contains('X'))\
                     #            & (SeqSummary20_2PC['IN Other_>20%'].str.contains('X'))
+                    """
                     good_QC_sequences = list(SeqSummary20_2PC.loc[AAcoverage & apobec & unusual
                                                             & bdhvn, 'Contig ID']) 
                                                             # & ~NsInPRRTIN, 'Sample ID'])
+                    """
+                    
+                    good_QC_sequences = list(SeqSummary20_2PC.loc[genes & 
+                                                                apobec & 
+                                                                unusual & 
+                                                                StopIndelAmbiguous, 
+                                                                'Contig ID']) 
 
+                
+                    ##"""
+                    # the criteria is based on apobec, unusual and stop codons/indels/abiguities
                     for n in range(len(SeqSummary20_2PC)):
                         if SeqSummary20_2PC.loc[n]['Contig ID'] in good_QC_sequences:
-                            SeqSummary20_2PC.at[n ,'QC Stanford ARG'] = 'PASSED'
-                            #SeqSummary20_2PC.loc[n ,'QC Stanford ARG'] = 'PASSED' # works similar
+                            SeqSummary20_2PC.at[n ,'QC Mutations ARG'] = 'PASSED'
+                            #SeqSummary20_2PC.loc[n ,'QC Mutations ARG'] = 'PASSED' # works similar
                         else:
-                            SeqSummary20_2PC.at[n ,'QC Stanford ARG'] = 'NOT Passed'
+                            SeqSummary20_2PC.at[n ,'QC Mutations ARG'] = 'NOT Passed'
                     
-                    SeqSummary20_2PC.insert(2, 'QC Stanford ARG',
-                                            SeqSummary20_2PC.pop('QC Stanford ARG'))
+                    SeqSummary20_2PC.insert(2, 'QC Mutations ARG',
+                                            SeqSummary20_2PC.pop('QC Mutations ARG'))
 
-                    MutSummary = SeqSummary20_2PC[['Contig ID', 'QC Stanford ARG', 
+                    MutSummary = SeqSummary20_2PC[['Contig ID', 'QC Mutations ARG', 
+                                                'PR min aa coverage', 'RT min aa coverage', 
+                                                'IN min aa coverage', 
                                                 'PI SDRMs_2-20%', 'PI SDRMs_>20%',
-                                                'PI Accessory_2-20%', 'PI Accessory_>20%', 
+                                                'PI Accessory_2-20%', 'PI Accessory_>20%',
                                                 'NRTI SDRMs_2-20%','NRTI SDRMs_>20%', 
-                                                'NNRTI SDRMs_2-20%','NNRTI SDRMs_>20%', 
+                                                'NNRTI SDRMs_2-20%','NNRTI SDRMs_>20%',
                                                 'INSTI SDRMs_2-20%','INSTI SDRMs_>20%']]
   
                 if title == 'ResistanceSummary' or title == 'resistanceSummaries' :
                     
                     DrugScoreSummary = SeqSummary20_2PC[[
-                       'Contig ID', f'Genes_>20%', #'Sample ID',
+                       'Contig ID', 'Genes_>20%', #'Sample ID',
                        'PI Major_2-20%','PI Major_>20%',
                        'ATV/r Level_2-20%','ATV/r Level_>20%',
                        'DRV/r Level_2-20%','DRV/r Level_>20%',
@@ -1478,8 +1543,14 @@ def data_consolidator(run_ID, batch, batch_path):
             DrugScoreSummary.insert(2, 'PI SDRMs_2-20%',
                                     DrugScoreSummary.pop('PI SDRMs_2-20%'))
 
-            DrugScoreSummary.insert(1, 'QC Stanford ARG',
-                                    DrugScoreSummary.pop('QC Stanford ARG'))
+            DrugScoreSummary.insert(1, 'IN min aa coverage',
+                                    DrugScoreSummary.pop('IN min aa coverage'))
+            DrugScoreSummary.insert(1, 'RT min aa coverage',
+                                    DrugScoreSummary.pop('RT min aa coverage'))
+            DrugScoreSummary.insert(1, 'PR min aa coverage',
+                                    DrugScoreSummary.pop('PR min aa coverage'))
+            DrugScoreSummary.insert(1, 'QC Mutations ARG',
+                                    DrugScoreSummary.pop('QC Mutations ARG'))
 
             sample_list = sample_list.merge(DrugScoreSummary, how='left', 
                                             left_on='Contig',
@@ -1502,8 +1573,8 @@ def data_consolidator(run_ID, batch, batch_path):
                 sample_list[dlc] = sample_list[dlc].map(resistanceCode)
 
 
-            ''' As the threshold of the sequences 2PC includes everyhting 
-            which is above 20PC this must be clean to group the mutations in
+            ''' As the threshold of the sequences 2PC includes everything 
+            which is above 20PC this must be cleaned to group the mutations in
             2-20% and >20%'''
             # np.where(cond, if_cond_True, if_cond_False)
             'PI'
@@ -1608,11 +1679,46 @@ def data_consolidator(run_ID, batch, batch_path):
                             sample_list['INSTI Accessory_2-20%']
                             )
 
+            #sample_list['Resistance mutations'] = ''
+
+            ################################################################################
+            # np.where(cond, if_cond_True, if_cond_False)
+            
+            resistance_col = sample_list[
+                                    ['Contig',
+                                    'PI Major_2-20%','PI Major_>20%',
+                                    'PI Accessory_2-20%', 'PI Accessory_>20%',
+                                    'NRTI_2-20%','NRTI_>20%', 'NNRTI_2-20%', 
+                                    'NNRTI_>20%','INSTI Major_2-20%', 
+                                    'INSTI Major_>20%','INSTI Accessory_2-20%',
+                                    'INSTI Accessory_>20%']
+                                    ]
+
+            resistance_col = resistance_col[resistance_col['Contig'].notnull()].fillna('None')    
+                        
+            resistance_col['Resistance mutations?'] = np.where(
+                            (resistance_col['PI Major_2-20%'] != 'None') |
+                            (resistance_col['PI Major_>20%'] != 'None') |
+                            (resistance_col['PI Accessory_2-20%'] != 'None') |
+                            (resistance_col['PI Accessory_>20%'] != 'None')|
+                            (resistance_col['NRTI_2-20%'] != 'None') |
+                            (resistance_col['NRTI_>20%'] != 'None') |
+                            (resistance_col['NNRTI_2-20%'] != 'None') |
+                            (resistance_col['NNRTI_>20%'] != 'None') |
+                            (resistance_col['INSTI Major_2-20%'] != 'None') |
+                            (resistance_col['INSTI Major_>20%'] != 'None') |
+                            (resistance_col['INSTI Accessory_2-20%'] != 'None') |
+                            (resistance_col['INSTI Accessory_>20%'] != 'None'),
+                            'Yes', '')
+            resistance_col = resistance_col[['Contig', 'Resistance mutations?']]
+            sample_list = sample_list.merge(resistance_col, how='left', on='Contig')
+
             os.chdir(run_path)
+            
             sample_list.to_csv(f'{run_ID}_Sequencing_results.csv', index= False)
 
             os.chdir(batch_path)
-            excel_file_name = Path(f'{batch}_NGS_Results_2-20PC_D100.xlsx')
+            excel_file_name = Path(f'{batch}_NGS_Results_2-20PC_D100.xlsx') #######
             previous_runs = []
             if Path(excel_file_name).exists():
                 wb = load_workbook(excel_file_name)
@@ -1636,14 +1742,12 @@ def data_consolidator(run_ID, batch, batch_path):
                 wb = Workbook()
                 #ws = wb.active
                 ws1 = wb.create_sheet('Summary_2-20PC_Depth_100', 0)
-                ws2 = wb.create_sheet('QC Stanford ARG Criteria', 1)
+                ws2 = wb.create_sheet('Criteria QC Stanford', 1)
 
-                criteria_row1 = 'Minimum amino acid(AA) coverage'
-                criteria_row2 = 'Maximum number of stop codons + unpublished\
-                                AA insertions or deletions + highly ambiguous\
-                                nucelotides (B,D,H,V,N)'
-                criteria_row3 = 'Maximum number of APOBEC3G/F hypermutated AAs'
-                criteria_row4 = 'Maximum number of highly unusual AA mutations'
+                criteria_row1 = 'Min amino acid(AA) coverage'
+                criteria_row2 = 'Max number of stop codons, insertions/deletions and highly ambiguous nt (B,D,H,V,N)'
+                criteria_row3 = 'Max number of APOBEC3G/F hypermutated AAs'
+                criteria_row4 = 'Max number of highly unusual AA mutations'
                 criteria = pd.DataFrame({ 'Criteria':[criteria_row1, 
                                                       criteria_row2, 
                                                       criteria_row3,
@@ -1667,7 +1771,7 @@ def data_consolidator(run_ID, batch, batch_path):
                     wb.save(excel_file_name)
             logging.info('Antiviral resistance genotyping data added')
             fasta_batches(run_ID, sample_list)
-
+            ##"""
         else:
 
             logging.warning(f'''
@@ -1759,14 +1863,36 @@ def majority_d30(run_ID, batch, batch_path):
 
                 if title == 'SequenceSummary' or title == 'sequenceSummaries':
                     
-                    'FILTERS'
-                    'Minumun coverage for each protein'
-                    AAcoverage = (report['PR Start']<=30)\
-                            & (report['PR End'] >=90)\
-                            & (report['RT Start']<=65)\
-                            & (report['RT End'] >=215)\
-                            & (report['IN Start']<=66)\
-                            & (report['IN End'] >=263)
+                    PR_coverage = (report['PR Start']<=30)\
+                                & (report['PR End'] >=90)
+                    report['PR min aa coverage'] = PR_coverage.map({
+                                                                True: 'Yes', 
+                                                                False: 'No'})
+                    
+                    RT_coverage =  (report['RT Start']<=65)\
+                               & (report['RT End'] >=215)
+                    report['RT min aa coverage'] = RT_coverage.map({
+                                                                True: 'Yes', 
+                                                                False: 'No'})
+                    
+                    IN_coverage = (report['IN Start']<=66)\
+                                  & (report['IN End'] >=263)
+                    report['IN min aa coverage'] = IN_coverage.map({
+                                                                True: 'Yes', 
+                                                                False: 'No'})
+                    
+                    # #INSERT COVERAGE
+                    # 'FILTERS'
+                    # 'Minumun coverage for each protein'
+                    # AAcoverage = (report['PR Start']<=30)\
+                    #         & (report['PR End'] >=90)\
+                    #         & (report['RT Start']<=65)\
+                    #         & (report['RT End'] >=215)\
+                    #         & (report['IN Start']<=66)\
+                    #         & (report['IN End'] >=263)
+
+                    '''Genes '''
+                    genes = report['Genes'].notnull()
                 
                     '''Maximum number of APOBEC3G/F hypermutated AAs	
                     3 + 2 + 3 (RT, PR, IN, respectively)'''
@@ -1780,27 +1906,47 @@ def majority_d30(run_ID, batch, batch_path):
                     + unpublished AA insertions or deletions
                     + highly ambiguous nucelotides (B,D,H,V,N)
                     4	2	3 (RT, PR, IN, respectively)'''
-                    bdhvn = report[f'{Num_BDHVN}']<=9
+                    
+                    # BDHVN count the motifs with X
+                    report['Num_StopIndelsBDHVN'] = report['Num Insertions'] +\
+                                                    report['Num Deletions'] +\
+                                                    report['Num Stop Codons']
+
+                    X_in_BDHVN = [x.count('X') for x in report[f'{BDHVN}']]
+                    report[f'{Num_BDHVN}'] = report[f'{Num_BDHVN}'] \
+                                                    - X_in_BDHVN
+                    report['Num_StopIndelsBDHVN'] = report['Num_StopIndelsBDHVN'] +\
+                                                                report[f'{Num_BDHVN}']  
+                    
+                    StopIndelAmbiguous = report['Num_StopIndelsBDHVN']<=9
+                
+                    # bdhvn = report[f'{Num_BDHVN}']<=9
                 
                     #'Once the results are filtered, presence of Ns in pol. 
                     # THIS CAN BE VERY STRINGENT!!!'
                     #NsInPRRTIN = (report['PR Other'].str.contains('X'))\
                     #            & (report['RT Other'].str.contains('X'))\
                     #            & (report['IN Other'].str.contains('X'))
-                    good_QC_sequences = list(report.loc[AAcoverage & apobec & unusual
-                                                            & bdhvn, 'Contig ID']) 
-                                                            # & ~NsInPRRTIN, 'Sample ID'])
+                    
+                    good_QC_sequences = list(report.loc[genes & 
+                                                        apobec & 
+                                                        unusual & 
+                                                        StopIndelAmbiguous, 
+                                                        'Contig ID']) 
+                     
                     for n in range(len(report)):
                         if report.loc[n]['Contig ID'] in good_QC_sequences:
-                            report.at[n ,'QC Stanford ARG'] = 'PASSED'
-                            #SeqSummary20_2PC.loc[n ,'QC Stanford ARG'] = 'PASSED' 
+                            report.at[n ,'QC Mutations ARG'] = 'PASSED'
+                            #SeqSummary20_2PC.loc[n ,'QC Mutations ARG'] = 'PASSED' 
                             # # works similar
                         else:
-                            report.at[n ,'QC Stanford ARG'] = 'NOT Passed'
-                    report.insert(2, 'QC Stanford ARG',
-                                            report.pop('QC Stanford ARG'))
+                            report.at[n ,'QC Mutations ARG'] = 'NOT Passed'
+                    report.insert(2, 'QC Mutations ARG',
+                                            report.pop('QC Mutations ARG'))
 
-                    MutSummary = report[['Contig ID', 'QC Stanford ARG', 
+                    MutSummary = report[['Contig ID', 'QC Mutations ARG',
+                                    'PR min aa coverage', 'RT min aa coverage', 
+                                    'IN min aa coverage',  
                                     'PI SDRMs','PI Accessory', 
                                     'NRTI SDRMs', 'NNRTI SDRMs', 
                                     'INSTI SDRMs']]
@@ -1826,12 +1972,6 @@ def majority_d30(run_ID, batch, batch_path):
                         'NRTI Depth','NNRTI Frequency (%)',	'NNRTI Depth',
                         'INSTI Frequency (%)',	'INSTI Depth']] = ''
 
-            ##################################################
-            #n =0
-            #for c in DrugScoreSummary.columns:
-            #    print(c, '____',n)
-            #    n+=1
-            ################################################
             DrugScoreSummary.insert(27, 'INSTI Frequency (%)',
                                     DrugScoreSummary.pop('INSTI Frequency (%)'))
             DrugScoreSummary.insert(27, 'INSTI Depth',
@@ -1861,9 +2001,14 @@ def majority_d30(run_ID, batch, batch_path):
                                     DrugScoreSummary.pop('PI Accessory'))
             DrugScoreSummary.insert(2, 'PI SDRMs',
                                     DrugScoreSummary.pop('PI SDRMs'))
-
-            DrugScoreSummary.insert(1, 'QC Stanford ARG',
-                                    DrugScoreSummary.pop('QC Stanford ARG'))
+            DrugScoreSummary.insert(1, 'IN min aa coverage',
+                                    DrugScoreSummary.pop('IN min aa coverage'))
+            DrugScoreSummary.insert(1, 'RT min aa coverage',
+                                    DrugScoreSummary.pop('RT min aa coverage'))
+            DrugScoreSummary.insert(1, 'PR min aa coverage',
+                                    DrugScoreSummary.pop('PR min aa coverage'))
+            DrugScoreSummary.insert(1, 'QC Mutations ARG',
+                                    DrugScoreSummary.pop('QC Mutations ARG'))
 
             sample_list = sample_list.merge(DrugScoreSummary, how='left', 
                                             left_on='Contig',
@@ -1884,6 +2029,23 @@ def majority_d30(run_ID, batch, batch_path):
                                 5: 'High-level resistance'}
             for dlc in drugLevelCols:
                 sample_list[dlc] = sample_list[dlc].map(resistanceCode)
+
+            resistance_col = sample_list[
+                        ['Contig','PI Major','PI Accessory', 'NRTI',
+                        'NNRTI','INSTI Major', 'INSTI Accessory']]
+
+            resistance_col = resistance_col[resistance_col['Contig'].notnull()].fillna('None')    
+                        
+            resistance_col['Resistance mutations?'] = np.where(
+                            (resistance_col['PI Major'] != 'None') |
+                            (resistance_col['PI Accessory'] != 'None') |
+                            (resistance_col['NRTI'] != 'None') |
+                            (resistance_col['NNRTI'] != 'None') |
+                            (resistance_col['INSTI Major'] != 'None') |
+                            (resistance_col['INSTI Accessory'] != 'None'),
+                            'Yes', '')
+            resistance_col = resistance_col[['Contig', 'Resistance mutations?']]
+            sample_list = sample_list.merge(resistance_col, how='left', on='Contig')
 
             os.chdir(run_path)
             sample_list.to_csv(
@@ -1917,14 +2079,12 @@ def majority_d30(run_ID, batch, batch_path):
                 wb = Workbook()
                 #ws = wb.active
                 ws1 = wb.create_sheet('Summary_Depth_30_20PC', 0)
-                ws2 = wb.create_sheet('QC Stanford ARG Criteria', 1)
+                ws2 = wb.create_sheet('Criteria QC Stanford', 1)
                 
-                criteria_row1 = 'Minimum amino acid(AA) coverage'
-                criteria_row2 = 'Maximum number of stop codons + unpublished\
-                                AA insertions or deletions + highly ambiguous\
-                                nucelotides (B,D,H,V,N)'
-                criteria_row3 = 'Maximum number of APOBEC3G/F hypermutated AAs'
-                criteria_row4 = 'Maximum number of highly unusual AA mutations'
+                criteria_row1 = 'Min amino acid(AA) coverage'
+                criteria_row2 = 'Max number of stop codons, AA insertions/deletions and highly ambiguous NT (B,D,H,V,N)'
+                criteria_row3 = 'Max number of APOBEC3G/F hypermutated AAs'
+                criteria_row4 = 'Max number of highly unusual AA mutations'
                 criteria = pd.DataFrame({ 'Criteria':[criteria_row1, 
                                                       criteria_row2, 
                                                       criteria_row3,
@@ -2052,12 +2212,14 @@ Cheers!
 
         run_info = args.input
         file_name = Path(run_info).name
+        run_ID = re.search(r'Run\d+_NGS\d+', file_name)
+        run_ID = run_ID.group()
         logging.info(f'> Processing data from file {file_name}')
-    
+
         if args.jphmm:
-            logging.info('Subtyping by jpHMM in PROCESS {run_ID}')
+            logging.info(f'Subtyping by jpHMM in PROCESS {run_ID}')
             running_local_jphmm(run_info)
-            logging.info('Subtyping complete for {run_ID}')
+            logging.info(f'Subtyping complete for {run_ID}')
 
         else:
             logging.warning(f'''
