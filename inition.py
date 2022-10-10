@@ -1,5 +1,5 @@
-__version__ = '1.1'
-__date__ = '07/10/2022'
+__version__ = '1.0'
+__date__ = '10/10/2022'
 __author__ = 'Juan Ledesma'
 
 import argparse
@@ -1240,7 +1240,7 @@ def data_consolidator(run_ID, batch, batch_path):
 
     if stanford_results.joinpath(f'{run_ID}.zip').is_file(): 
 
-        if Path.cwd().joinpath(run_ID).exists() == False: ############## : # 
+        if Path.cwd().joinpath(run_ID).exists() == False: ####debugging>>> : #
 
             sp.run(['unzip','-j', f'{run_ID}.zip', '-d', f'{run_ID}'])#, text=True)
 
@@ -1337,34 +1337,59 @@ def data_consolidator(run_ID, batch, batch_path):
                                     ])
                     'FILTERS'
                     
-                    # 'Minumun coverage for each protein'
-                    # AAcoverage = (SeqSummary20_2PC['PR Start_>20%']<=30)\
-                    #             & (SeqSummary20_2PC['PR End_>20%'] >=90)\
-                    #             & (SeqSummary20_2PC['RT Start_>20%']<=65)\
-                    #             & (SeqSummary20_2PC['RT End_>20%'] >=215)\
-                    #             & (SeqSummary20_2PC['IN Start_>20%']<=66)\
-                    #             & (SeqSummary20_2PC['IN End_>20%'] >=263)
-                    
-                    '''Columns for minimun coverage'''
+                    '''Columns for minimun coverage and fragment available
+                    excluding amino acids X due to nt xNN or NNN'''
 
+                    ##PR (99 aas)
                     PR_coverage = (SeqSummary20_2PC['PR Start_>20%']<=30)\
                                 & (SeqSummary20_2PC['PR End_>20%'] >=90)
-                    SeqSummary20_2PC['PR min aa coverage'] = PR_coverage.map({
+                    SeqSummary20_2PC['PR min aa Start 30-End 90'] = PR_coverage.map({
                                                                         True: 'Yes', 
                                                                         False: 'No'})
                     
+                    PR_gene = SeqSummary20_2PC[['PR Start_>20%', 'PR End_>20%',
+                                                'PR Other_>20%','Contig ID']]
+                    PR_gene = PR_gene.dropna()
+                    XinPR_Other = [x.count('X') for x in PR_gene['PR Other_>20%']]
+                    PR_fragment = PR_gene['PR End_>20%'] - PR_gene['PR Start_>20%'] +1
+                    PR_available = (PR_fragment - XinPR_Other)/99*100
+                    PR_gene['PR coverage'] = round(PR_available, 2)
+                    PR_gene = PR_gene[['Contig ID','PR coverage']]
+                    SeqSummary20_2PC = SeqSummary20_2PC.merge(PR_gene, how='left', on='Contig ID')
+
+                    ##RT (560 aas)
                     RT_coverage =  (SeqSummary20_2PC['RT Start_>20%']<=65)\
                                & (SeqSummary20_2PC['RT End_>20%'] >=215)
-                    SeqSummary20_2PC['RT min aa coverage'] = RT_coverage.map({
+                    SeqSummary20_2PC['RT min aa Start 65-End 215'] = RT_coverage.map({
                                                                         True: 'Yes', 
                                                                         False: 'No'})
-                    
+                    RT_gene = SeqSummary20_2PC[['RT Start_>20%', 'RT End_>20%',
+                                                'RT Other_>20%','Contig ID']]
+                    RT_gene = RT_gene.dropna()
+                    XinRT_Other = [x.count('X') for x in RT_gene['RT Other_>20%']]
+                    RT_fragment = RT_gene['RT End_>20%'] - RT_gene['RT Start_>20%'] +1
+                    RT_available = (RT_fragment - XinRT_Other)/560*100
+                    RT_gene['RT coverage'] = round(RT_available, 2)
+                    RT_gene = RT_gene[['Contig ID','RT coverage']]
+                    SeqSummary20_2PC = SeqSummary20_2PC.merge(RT_gene, how='left', on='Contig ID')
+
+
+                    ##IN (288 aas)
                     IN_coverage = (SeqSummary20_2PC['IN Start_>20%']<=66)\
                                   & (SeqSummary20_2PC['IN End_>20%'] >=263)
-                    SeqSummary20_2PC['IN min aa coverage'] = IN_coverage.map({
+                    SeqSummary20_2PC['IN min aa Start 66-End 263'] = IN_coverage.map({
                                                                         True: 'Yes', 
                                                                         False: 'No'})
-
+                    IN_gene = SeqSummary20_2PC[['IN Start_>20%', 'IN End_>20%',
+                                                'IN Other_>20%', 'Contig ID']]
+                    IN_gene = IN_gene.dropna()
+                    XinIN_Other = [x.count('X') for x in IN_gene['IN Other_>20%']]
+                    IN_fragment = IN_gene['IN End_>20%'] - IN_gene['IN Start_>20%'] +1
+                    IN_available = (IN_fragment - XinIN_Other)/288*100
+                    IN_gene['IN coverage'] = round(IN_available, 2)
+                    IN_gene = IN_gene[['Contig ID','IN coverage']]
+                    SeqSummary20_2PC = SeqSummary20_2PC.merge(IN_gene, how='left', on='Contig ID')
+                                     
                     '''Genes available for analysis'''
                     genes = SeqSummary20_2PC['Genes_>20%'].notnull()
 
@@ -1410,17 +1435,6 @@ def data_consolidator(run_ID, batch, batch_path):
                     
                     #bdhvn = SeqSummary20_2PC[f'{Num_BDHVN}_>20%']<=9
 
-                    #'Once the results are filtered, presence of Ns in pol. 
-                    # THIS CAN BE VERY STRINGENT!!!'
-                    #NsInPRRTIN = (SeqSummary20_2PC['PR Other_>20%'].str.contains('X'))\
-                    #            & (SeqSummary20_2PC['RT Other_>20%'].str.contains('X'))\
-                    #            & (SeqSummary20_2PC['IN Other_>20%'].str.contains('X'))
-                    """
-                    good_QC_sequences = list(SeqSummary20_2PC.loc[AAcoverage & apobec & unusual
-                                                            & bdhvn, 'Contig ID']) 
-                                                            # & ~NsInPRRTIN, 'Sample ID'])
-                    """
-                    
                     good_QC_sequences = list(SeqSummary20_2PC.loc[genes & 
                                                                 apobec & 
                                                                 unusual & 
@@ -1428,7 +1442,7 @@ def data_consolidator(run_ID, batch, batch_path):
                                                                 'Contig ID']) 
 
                 
-                    ##"""
+                    
                     # the criteria is based on apobec, unusual and stop codons/indels/abiguities
                     for n in range(len(SeqSummary20_2PC)):
                         if SeqSummary20_2PC.loc[n]['Contig ID'] in good_QC_sequences:
@@ -1441,8 +1455,12 @@ def data_consolidator(run_ID, batch, batch_path):
                                             SeqSummary20_2PC.pop('QC Mutations ARG'))
 
                     MutSummary = SeqSummary20_2PC[['Contig ID', 'QC Mutations ARG', 
-                                                'PR min aa coverage', 'RT min aa coverage', 
-                                                'IN min aa coverage', 
+                                                'PR min aa Start 30-End 90', 
+                                                'PR coverage',
+                                                'RT min aa Start 65-End 215',
+                                                'RT coverage', 
+                                                'IN min aa Start 66-End 263',
+                                                'IN coverage',
                                                 'PI SDRMs_2-20%', 'PI SDRMs_>20%',
                                                 'PI Accessory_2-20%', 'PI Accessory_>20%',
                                                 'NRTI SDRMs_2-20%','NRTI SDRMs_>20%', 
@@ -1543,12 +1561,21 @@ def data_consolidator(run_ID, batch, batch_path):
             DrugScoreSummary.insert(2, 'PI SDRMs_2-20%',
                                     DrugScoreSummary.pop('PI SDRMs_2-20%'))
 
-            DrugScoreSummary.insert(1, 'IN min aa coverage',
-                                    DrugScoreSummary.pop('IN min aa coverage'))
-            DrugScoreSummary.insert(1, 'RT min aa coverage',
-                                    DrugScoreSummary.pop('RT min aa coverage'))
-            DrugScoreSummary.insert(1, 'PR min aa coverage',
-                                    DrugScoreSummary.pop('PR min aa coverage'))
+            DrugScoreSummary.insert(1, 'IN coverage',
+                                    DrugScoreSummary.pop('IN coverage'))
+            DrugScoreSummary.insert(1, 'IN min aa Start 66-End 263',
+                                    DrugScoreSummary.pop('IN min aa Start 66-End 263'))
+                                    
+
+            DrugScoreSummary.insert(1, 'RT coverage',
+                                    DrugScoreSummary.pop('RT coverage'))
+            DrugScoreSummary.insert(1, 'RT min aa Start 65-End 215',
+                                    DrugScoreSummary.pop('RT min aa Start 65-End 215'))
+            
+            DrugScoreSummary.insert(1, 'PR coverage',
+                                    DrugScoreSummary.pop('PR coverage'))
+            DrugScoreSummary.insert(1, 'PR min aa Start 30-End 90',
+                        DrugScoreSummary.pop('PR min aa Start 30-End 90'))
             DrugScoreSummary.insert(1, 'QC Mutations ARG',
                                     DrugScoreSummary.pop('QC Mutations ARG'))
 
@@ -1681,7 +1708,6 @@ def data_consolidator(run_ID, batch, batch_path):
 
             #sample_list['Resistance mutations'] = ''
 
-            ################################################################################
             # np.where(cond, if_cond_True, if_cond_False)
             
             resistance_col = sample_list[
@@ -1744,17 +1770,22 @@ def data_consolidator(run_ID, batch, batch_path):
                 ws1 = wb.create_sheet('Summary_2-20PC_Depth_100', 0)
                 ws2 = wb.create_sheet('Criteria QC Stanford', 1)
 
-                criteria_row1 = 'Min amino acid(AA) coverage'
-                criteria_row2 = 'Max number of stop codons, insertions/deletions and highly ambiguous nt (B,D,H,V,N)'
-                criteria_row3 = 'Max number of APOBEC3G/F hypermutated AAs'
-                criteria_row4 = 'Max number of highly unusual AA mutations'
+                criteria_row1 = 'QC Mutations ARG: Max number of stop codons, insertions/deletions and highly ambiguous nt (B,D,H,V,N)'
+                criteria_row2 = 'QC Mutations ARG: Max number of APOBEC3G/F hypermutated AAs'
+                criteria_row3 = 'QC Mutations ARG: Max number of highly unusual AA mutations'
+                criteria_row4 = 'Min amino acid(AA) coverage'
+                criteria_row5 = 'AA coverage for each gene'
                 criteria = pd.DataFrame({ 'Criteria':[criteria_row1, 
-                                                      criteria_row2, 
-                                                      criteria_row3,
-                                                      criteria_row4],
-                                        'RT':['Positions 65 to 215', 4, 3, 15],
-                                        'PR':['Positions 30 to 90', 2, 2, 8],
-                                        'IN':['Positions 66 to 263', 3,3 ,10]
+                                                        criteria_row2, 
+                                                        criteria_row3,
+                                                        criteria_row4, 
+                                                        criteria_row5],
+                                        'PR':[2, 2, 8, 'Positions 30 to 90', 
+                                            'fragment_positions_30-90 - Xs_in_column_PR_Other/99*100'],
+                                        'RT':[ 4, 3, 15, 'Positions 65 to 215',
+                                            'fragment_positions_65-215 - Xs_in_column_RT_Other/560*100'],
+                                        'IN':[ 3,3 ,10, 'Positions 66 to 263',
+                                            'fragment_positions_66-263 - Xs_in_column_IN_Other/288*100']
                                         })
 
 
@@ -1771,7 +1802,7 @@ def data_consolidator(run_ID, batch, batch_path):
                     wb.save(excel_file_name)
             logging.info('Antiviral resistance genotyping data added')
             fasta_batches(run_ID, sample_list)
-            ##"""
+            
         else:
 
             logging.warning(f'''
@@ -1789,7 +1820,6 @@ def data_consolidator(run_ID, batch, batch_path):
                 ''')
         sys.exit(1)
 
-    #"""#
 ##############################################################################
 
 def majority_d30(run_ID, batch, batch_path):
@@ -1865,22 +1895,49 @@ def majority_d30(run_ID, batch, batch_path):
                     
                     PR_coverage = (report['PR Start']<=30)\
                                 & (report['PR End'] >=90)
-                    report['PR min aa coverage'] = PR_coverage.map({
+                    report['PR min aa Start 30-End 90'] = PR_coverage.map({
                                                                 True: 'Yes', 
                                                                 False: 'No'})
-                    
+                    PR_gene = report[['PR Start', 'PR End',
+                                                'PR Other','Contig ID']]
+                    PR_gene = PR_gene.dropna()
+                    XinPR_Other = [x.count('X') for x in PR_gene['PR Other']]
+                    PR_fragment = PR_gene['PR End'] - PR_gene['PR Start'] +1
+                    PR_available = (PR_fragment - XinPR_Other)/99*100
+                    PR_gene['PR coverage'] = round(PR_available, 2)
+                    PR_gene = PR_gene[['Contig ID','PR coverage']]
+                    report = report.merge(PR_gene, how='left', on='Contig ID')
+
                     RT_coverage =  (report['RT Start']<=65)\
                                & (report['RT End'] >=215)
-                    report['RT min aa coverage'] = RT_coverage.map({
+                    report['RT min aa Start 65-End 215'] = RT_coverage.map({
                                                                 True: 'Yes', 
                                                                 False: 'No'})
+                    RT_gene = report[['RT Start', 'RT End',
+                                                'RT Other','Contig ID']]
+                    RT_gene = RT_gene.dropna()
+                    XinRT_Other = [x.count('X') for x in RT_gene['RT Other']]
+                    RT_fragment = RT_gene['RT End'] - RT_gene['RT Start'] +1
+                    RT_available = (RT_fragment - XinRT_Other)/560*100
+                    RT_gene['RT coverage'] = round(RT_available, 2)
+                    RT_gene = RT_gene[['Contig ID','RT coverage']]
+                    report = report.merge(RT_gene, how='left', on='Contig ID')
                     
                     IN_coverage = (report['IN Start']<=66)\
                                   & (report['IN End'] >=263)
-                    report['IN min aa coverage'] = IN_coverage.map({
+                    report['IN min aa Start 66-End 263'] = IN_coverage.map({
                                                                 True: 'Yes', 
                                                                 False: 'No'})
-                    
+                    IN_gene = report[['IN Start', 'IN End',
+                                                'IN Other', 'Contig ID']]
+                    IN_gene = IN_gene.dropna()
+                    XinIN_Other = [x.count('X') for x in IN_gene['IN Other']]
+                    IN_fragment = IN_gene['IN End'] - IN_gene['IN Start'] +1
+                    IN_available = (IN_fragment - XinIN_Other)/288*100
+                    IN_gene['IN coverage'] = round(IN_available, 2)
+                    IN_gene = IN_gene[['Contig ID','IN coverage']]
+                    report = report.merge(IN_gene, how='left', on='Contig ID')
+
                     # #INSERT COVERAGE
                     # 'FILTERS'
                     # 'Minumun coverage for each protein'
@@ -1945,8 +2002,12 @@ def majority_d30(run_ID, batch, batch_path):
                                             report.pop('QC Mutations ARG'))
 
                     MutSummary = report[['Contig ID', 'QC Mutations ARG',
-                                    'PR min aa coverage', 'RT min aa coverage', 
-                                    'IN min aa coverage',  
+                                    'PR min aa Start 30-End 90', 
+                                    'PR coverage',
+                                    'RT min aa Start 65-End 215',
+                                    'RT coverage', 
+                                    'IN min aa Start 66-End 263',
+                                    'IN coverage',
                                     'PI SDRMs','PI Accessory', 
                                     'NRTI SDRMs', 'NNRTI SDRMs', 
                                     'INSTI SDRMs']]
@@ -2001,15 +2062,21 @@ def majority_d30(run_ID, batch, batch_path):
                                     DrugScoreSummary.pop('PI Accessory'))
             DrugScoreSummary.insert(2, 'PI SDRMs',
                                     DrugScoreSummary.pop('PI SDRMs'))
-            DrugScoreSummary.insert(1, 'IN min aa coverage',
-                                    DrugScoreSummary.pop('IN min aa coverage'))
-            DrugScoreSummary.insert(1, 'RT min aa coverage',
-                                    DrugScoreSummary.pop('RT min aa coverage'))
-            DrugScoreSummary.insert(1, 'PR min aa coverage',
-                                    DrugScoreSummary.pop('PR min aa coverage'))
+            
+            DrugScoreSummary.insert(1, 'IN coverage',
+                                    DrugScoreSummary.pop('IN coverage'))
+            DrugScoreSummary.insert(1, 'PR min aa Start 30-End 90',
+                                    DrugScoreSummary.pop('PR min aa Start 30-End 90'))
+            DrugScoreSummary.insert(1, 'RT coverage',
+                                    DrugScoreSummary.pop('RT coverage'))
+            DrugScoreSummary.insert(1, 'RT min aa Start 65-End 215',
+                                    DrugScoreSummary.pop('RT min aa Start 65-End 215'))
+            DrugScoreSummary.insert(1, 'PR coverage',
+                                    DrugScoreSummary.pop('PR coverage'))
+            DrugScoreSummary.insert(1, 'IN min aa Start 66-End 263',
+                                    DrugScoreSummary.pop('IN min aa Start 66-End 263'))
             DrugScoreSummary.insert(1, 'QC Mutations ARG',
                                     DrugScoreSummary.pop('QC Mutations ARG'))
-
             sample_list = sample_list.merge(DrugScoreSummary, how='left', 
                                             left_on='Contig',
                                             right_on='Contig ID')
@@ -2081,17 +2148,22 @@ def majority_d30(run_ID, batch, batch_path):
                 ws1 = wb.create_sheet('Summary_Depth_30_20PC', 0)
                 ws2 = wb.create_sheet('Criteria QC Stanford', 1)
                 
-                criteria_row1 = 'Min amino acid(AA) coverage'
-                criteria_row2 = 'Max number of stop codons, AA insertions/deletions and highly ambiguous NT (B,D,H,V,N)'
-                criteria_row3 = 'Max number of APOBEC3G/F hypermutated AAs'
-                criteria_row4 = 'Max number of highly unusual AA mutations'
+                criteria_row1 = 'QC Mutations ARG: Max number of stop codons, insertions/deletions and highly ambiguous nt (B,D,H,V,N)'
+                criteria_row2 = 'QC Mutations ARG: Max number of APOBEC3G/F hypermutated AAs'
+                criteria_row3 = 'QC Mutations ARG: Max number of highly unusual AA mutations'
+                criteria_row4 = 'Min amino acid(AA) coverage'
+                criteria_row5 = 'AA coverage for each gene'
                 criteria = pd.DataFrame({ 'Criteria':[criteria_row1, 
-                                                      criteria_row2, 
-                                                      criteria_row3,
-                                                      criteria_row4],
-                                        'RT':['Positions 65 to 215', 4, 3, 15],
-                                        'PR':['Positions 30 to 90', 2, 2, 8],
-                                        'IN':['Positions 66 to 263', 3,3 ,10]
+                                                        criteria_row2, 
+                                                        criteria_row3,
+                                                        criteria_row4, 
+                                                        criteria_row5],
+                                        'PR':[2, 2, 8, 'Positions 30 to 90', 
+                                            'fragment_positions_30-90 - Xs_in_column_PR_Other/99*100'],
+                                        'RT':[ 4, 3, 15, 'Positions 65 to 215',
+                                            'fragment_positions_65-215 - Xs_in_column_RT_Other/560*100'],
+                                        'IN':[ 3,3 ,10, 'Positions 66 to 263',
+                                            'fragment_positions_66-263 - Xs_in_column_IN_Other/288*100']
                                         })
 
 
